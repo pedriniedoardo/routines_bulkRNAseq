@@ -1,0 +1,18 @@
+# ignore files
+.Rhistory
+.RData
+.Ruserdata
+.Rhistory
+.Rprofile
+*.Rproj
+
+# ignore folder
+.conda/
+.Rproj.user/
+data/
+out/
+ref/
+
+# quarto files
+/.quarto/
+_site/
