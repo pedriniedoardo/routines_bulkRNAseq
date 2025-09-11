@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>QC methods for DE analysis using DESeq2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="23_QC_files/libs/clipboard/clipboard.min.js"></script>
+<script src="23_QC_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="23_QC_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="23_QC_files/libs/quarto-html/popper.min.js"></script>
+<script src="23_QC_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="23_QC_files/libs/quarto-html/anchor.min.js"></script>
+<link href="23_QC_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="23_QC_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="23_QC_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="23_QC_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="23_QC_files/libs/bootstrap/bootstrap-05cc275de2cb3139844e2d4d6308aaf1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">QC methods for DE analysis using DESeq2</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="learning-objectives" class="level2">
+<h2 class="anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<ul>
+<li>Recognize the importance of methods for count data transformation</li>
+<li>Describe the PCA (principal component analysis) technique</li>
+<li>Interpret different examples of PCA plots</li>
+<li>Evaluate sample quality using PCA and hierachical clustering</li>
+</ul>
+</section>
+<section id="quality-control" class="level1">
+<h1>Quality Control</h1>
+<p>The next step in the DESeq2 workflow is QC, which includes sample-level and gene-level steps to perform QC checks on the count data to help us ensure that the samples/replicates look good.</p>
+<div id="fig-salmon" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-salmon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/de_workflow_salmon_qc.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>salmon</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-salmon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1
+</figcaption>
+</figure>
+</div>
+<section id="sample-level-qc" class="level2">
+<h2 class="anchored" data-anchor-id="sample-level-qc">Sample-level QC</h2>
+<p>A useful initial step in an RNA-seq analysis is often to assess overall similarity between samples:</p>
+<ul>
+<li>Which samples are similar to each other, which are different?</li>
+<li>Does this fit to the expectation from the experiment’s design?</li>
+<li>What are the major sources of variation in the dataset?</li>
+</ul>
+<p>To explore the similarity of our samples, we will be performing sample-level QC using Principal Component Analysis (PCA) and hierarchical clustering methods. These methods/tools allow us to check <strong>how well similar the replicates are to each other</strong> (clustering) and <strong>to make sure that the experimental condition is the major source of variation</strong> in the data. Sample-level QC can also help identify any samples behaving like outliers; we can further explore any potential outliers to determine whether they need to be removed prior to DE analysis.</p>
+<div id="fig-qc1" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-qc1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/sample_qc.png" class="img-fluid figure-img" width="700"></p>
+<figcaption>qc1</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-qc1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2
+</figcaption>
+</figure>
+</div>
+<p>These unsupervised clustering methods are run using <strong>log2 transformed normalized counts</strong>. The log2 transformation <strong>improves the distances/clustering for visualization</strong>. Instead of using an ordinary log2 transform, we will be using <strong>regularized log transform</strong> (rlog), to avoid any bias from the abundance of low-count genes; Note1 below explains this in more detail.</p>
+<div id="fig-qc2" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-qc2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/rlog_transformation_new.png" class="img-fluid figure-img" width="650"></p>
+<figcaption>qc2</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-qc2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3
+</figcaption>
+</figure>
+</div>
+<p><em>Image adapted from “<a href="https://bioc.ism.ac.jp/packages/2.14/bioc/vignettes/DESeq2/inst/doc/beginner.pdf">Beginner’s guide to using the DESeq2 package</a>” by Love, Anders and Huber, 2014</em></p>
+<blockquote class="blockquote">
+<p><strong>NOTE1:</strong> <em>“Many common statistical methods for exploratory analysis of multidimensional data, especially methods for clustering and ordination (e. g., principal-component analysis and the like), work best for (at least approximately) homoskedastic data; this means that the variance of an observable quantity (i.e., here, the expression strength of a gene) does not depend on the mean. In RNA-Seq data, however, variance grows with the mean. For example, if one performs PCA directly on a matrix of normalized read counts, the result typically depends only on the few most strongly expressed genes because they show the largest absolute differences between samples. A simple and often used strategy to avoid this is to take the logarithm of the normalized count values plus a small pseudocount; however, now the genes with low counts tend to dominate the results because, due to the strong Poisson noise inherent to small count values, they show the strongest relative differences between samples.</em></p>
+<p><em>As a solution, DESeq2 offers the regularized-logarithm transformation, or rlog for short. For genes with high counts, the rlog transformation differs not much from an ordinary log2 transformation. For genes with lower counts, however, the values are shrunken towards the genes’ averages across all samples. Using an empirical Bayesian prior in the form of a ridge penality, this is done such that the rlog-transformed data are approximately homoskedastic.”</em> - From the “Beginner’s guide to using the DESeq2 package” by Love, Anders and Huber, 2014 (the <a href="http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html">DESeq2 vignette</a> is the updated version of this doc).</p>
+</blockquote>
+<blockquote class="blockquote">
+<p><strong>NOTE2:</strong> The <a href="http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html">DESeq2 vignette</a> suggests large datasets (100s of samples) to use the variance-stabilizing transformation (vst) instead of rlog for transformation of the counts, since the rlog function might take too long to run and the <code>vst()</code> function is faster with similar properties to rlog.</p>
+</blockquote>
+<section id="principal-component-analysis-pca" class="level3">
+<h3 class="anchored" data-anchor-id="principal-component-analysis-pca">Principal Component Analysis (PCA)</h3>
+<p>Principal Component Analysis (PCA) is a technique used to emphasize variation and bring out strong patterns in a dataset (dimensionality reduction). This is a very important technique used in the QC and analysis of both bulk and single-cell RNAseq data.</p>
+<p>To better understand how it works, <strong>please go through <a href="https://www.youtube.com/watch?v=_UVHneBUBW0">this YouTube video from StatQuest</a> that explains PCA</strong>. Alternatively, we have <strong>prepared a <a href="principal_component_analysis.md">PCA lesson</a></strong>. After you have gone through the material, please proceed with the interpretation section below.</p>
+<hr>
+<hr>
+<section id="interpreting-pca-plots" class="level4">
+<h4 class="anchored" data-anchor-id="interpreting-pca-plots">Interpreting PCA plots</h4>
+<p><strong>Essentially, if two samples have similar levels of expression for the genes that contribute significantly to the variation represented by a given PC (Principal Component), they will be plotted close together on the axis that represents that PC.</strong> Therefore, we would expect that biological replicates to have similar scores (because our expectation is that the same genes are changing) and cluster together. This is easiest to understand by visualizing some example PCA plots.</p>
+<p>We have an example dataset and a few associated PCA plots below to get a feel for how to interpret them. The metadata for the experiment is displayed below. The main condition of interest is <code>treatment</code>.</p>
+<div id="fig-metadata" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-metadata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/example_metadata.png" class="img-fluid figure-img" width="600"></p>
+<figcaption>metadata</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-metadata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4
+</figcaption>
+</figure>
+</div>
+<p>When visualizing on PC1 and PC2, we don’t see the samples separate by <code>treatment</code>, so we decide to explore other sources of variation present in the data. We hope that we have included all possible known sources of variation in our metadata table, and we can use these factors to color the PCA plot.</p>
+<div id="fig-pca1" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/example_PCA_treatmentPC1.png" class="img-fluid figure-img" width="600"></p>
+<figcaption>pca1</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-pca1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5
+</figcaption>
+</figure>
+</div>
+<p>We start with the factor <code>cage</code>, but the <code>cage</code> factor does not seem to explain the variation on PC1 or PC2.</p>
+<div id="fig-pca2" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/example_PCA_cage.png" class="img-fluid figure-img" width="600"></p>
+<figcaption>pca2</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-pca2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6
+</figcaption>
+</figure>
+</div>
+<p>Then, we color by the <code>sex</code> factor, which appears to separate samples on PC2. This is good information to take note of, as we can use it downstream to account for the variation due to sex in the model and regress it out.</p>
+<div id="fig-pca3" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/example_PCA_sex.png" class="img-fluid figure-img" width="600"></p>
+<figcaption>pca3</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-pca3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7
+</figcaption>
+</figure>
+</div>
+<p>Next we explore the <code>strain</code> factor and find that it explains the variation on PC1.</p>
+<div id="fig-pca4" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/example_PCA_strain.png" class="img-fluid figure-img" width="600"></p>
+<figcaption>pca4</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-pca4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8
+</figcaption>
+</figure>
+</div>
+<p>It’s great that we have been able to identify the sources of variation for both PC1 and PC2. By accounting for it in our model, we should be able to detect more genes differentially expressed due to <code>treatment</code>.</p>
+<p>Worrisome about this plot is that we see two samples that do not cluster with the correct strain. This would indicate a likely <strong>sample swap</strong> and should be investigated to determine whether these samples are indeed the labeled strains. If we found there was a switch, we could swap the samples in the metadata. However, if we think they are labeled correctly or are unsure, we could just remove the samples from the dataset.</p>
+<p>Still we haven’t found if <code>treatment</code> is a major source of variation after <code>strain</code> and <code>sex</code>. So, we explore PC3 and PC4 to see if <code>treatment</code> is driving the variation represented by either of these PCs.</p>
+<div id="fig-pca5" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca5-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/example_PCA_treatmentPC3.png" class="img-fluid figure-img" width="600"></p>
+<figcaption>pca5</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-pca5-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9
+</figcaption>
+</figure>
+</div>
+<p>We find that the samples separate by <code>treatment</code> on PC3, and are optimistic about our DE analysis since our condition of interest, <code>treatment</code>, is separating on PC3 and we can regress out the variation driving PC1 and PC2.</p>
+<p>Depending on how much variation is explained by the first few principal components, you <strong>may want to explore more (i.e consider more components and plot pairwise combinations)</strong>. Even if your samples do not separate clearly by the experimental variable, you may still get biologically relevant results from the DE analysis. If you are expecting very small effect sizes, then it’s possible the signal is drowned out by extraneous sources of variation. In situations <strong>where you can identify those sources, it is important to account for these in your model</strong>, as it provides more power to the tool for detecting DE genes.</p>
+</section>
+</section>
+<section id="hierarchical-clustering-heatmap" class="level3">
+<h3 class="anchored" data-anchor-id="hierarchical-clustering-heatmap">Hierarchical Clustering Heatmap</h3>
+<p>Similar to PCA, hierarchical clustering is another, complementary, method for identifying strong patterns in a dataset and potential outliers. The heatmap displays <strong>the correlation of gene expression for all pairwise combinations of samples</strong> in the dataset. Since the majority of genes are not differentially expressed, samples generally have high correlations with each other (values higher than 0.80). Samples below 0.80 may indicate an outlier in your data and/or sample contamination.</p>
+<p>The hierarchical tree along the axes indicates which samples are more similar to each other, i.e.&nbsp;cluster together. The color blocks at the top indicate substructure in the data, and you would expect to see your replicates cluster together as a block for each sample group. Our expectation would be that the samples cluster together similar to the groupings we’ve observed in the PCA plot.</p>
+<p><strong>In the plot below, we would be quite concerned about ‘Wt_3’ and ‘KD_3’ samples not clustering with the other replicates. We would want to explore the PCA to see if we see the same clustering of samples.</strong></p>
+<div id="fig-hm" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-hm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/heatmap_example.png" class="img-fluid figure-img" width="500"></p>
+<figcaption>hm</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-hm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10
+</figcaption>
+</figure>
+</div>
+<hr>
+</section>
+</section>
+<section id="mov10-quality-assessment-and-exploratory-analysis-using-deseq2" class="level2">
+<h2 class="anchored" data-anchor-id="mov10-quality-assessment-and-exploratory-analysis-using-deseq2">Mov10 quality assessment and exploratory analysis using DESeq2</h2>
+<p>Now that we have a good understanding of the QC steps normally employed for RNA-seq, let’s implement them for the Mov10 dataset we are going to be working with.</p>
+<section id="transform-normalized-counts-for-the-mov10-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="transform-normalized-counts-for-the-mov10-dataset">Transform normalized counts for the MOV10 dataset</h3>
+<p><strong>To improve the distances/clustering for the PCA and heirarchical clustering visualization methods</strong>, we need to moderate the variance across the mean by applying the rlog transformation to the normalized counts.</p>
+<blockquote class="blockquote">
+<p>The rlog transformation of the normalized counts is only necessary for these visualization methods during this quality assessment. We will not be using these tranformed counts for determining differential expression.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load the libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DEGreport)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># read in the main object</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../out/object/dds.rds"</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># read in the metadata of the object</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../out/object/metadata.rds"</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="do">### Transform counts for data visualization</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>rld <span class="ot">&lt;-</span> <span class="fu">rlog</span>(dds, <span class="at">blind=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># print the object</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>rld</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>class: DESeqTransform 
+dim: 57761 8 
+metadata(1): version
+assays(1): ''
+rownames(57761): ENSG00000000003 ENSG00000000005 ... ENSG00000285978
+  ENSG00000285980
+rowData names(7): baseMean baseVar ... dispFit rlogIntercept
+colnames(8): Irrel_kd_1 Irrel_kd_2 ... Mov10_oe_2 Mov10_oe_3
+colData names(2): sampletype sizeFactor</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># notice that the scaled data are stored in a specific slot</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">assay</span>(rld)[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003  11.879178  11.847305  11.887679  11.885792  11.882961
+ENSG00000000005   4.675471   4.740605   4.743602   4.667962   4.553886
+ENSG00000000419  10.426581  10.436979  10.323924  10.547916  10.496205
+ENSG00000000457   8.906108   8.843049   8.944107   9.137809   9.154955
+ENSG00000000460  10.244295  10.215751  10.156250  10.341768  10.280098
+ENSG00000000938  -1.122517  -1.121425  -1.132926  -1.116357  -1.134385
+ENSG00000000971   3.598552   3.584239   3.467607   3.476901   3.365859
+ENSG00000001036  11.478492  11.406880  11.385081  11.485091  11.494183
+ENSG00000001084  11.362788  11.308184  11.339405  11.467599  11.534253
+ENSG00000001167  11.374085  11.289580  11.321077  11.439005  11.395984
+                Mov10_oe_1 Mov10_oe_2 Mov10_oe_3
+ENSG00000000003  11.542977  11.543930  11.682572
+ENSG00000000005   4.629674   4.774851   4.770351
+ENSG00000000419  10.563831  10.567554  10.778103
+ENSG00000000457   9.028748   9.014182   9.050748
+ENSG00000000460  10.012626  10.042656  10.069882
+ENSG00000000938  -1.135587  -1.135496  -1.132034
+ENSG00000000971   3.436513   3.572359   3.428554
+ENSG00000001036  11.295572  11.434096  11.350226
+ENSG00000001084  11.044578  11.142362  11.248614
+ENSG00000001167  11.145632  11.139318  11.123720</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the distribution of the data</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">assay</span>(rld) <span class="sc">%&gt;%</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="st">"feature"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">names_to =</span> <span class="st">"sample"</span>,<span class="at">values_to =</span> <span class="st">"value"</span>,<span class="sc">-</span>feature) <span class="sc">%&gt;%</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>sample,<span class="at">y=</span>value)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># compare it to the counts</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">counts</span>(dds,<span class="at">normalized =</span> T)[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  Irrel_kd_1  Irrel_kd_2  Irrel_kd_3  Mov10_kd_2  Mov10_kd_3
+ENSG00000000003 3924.5330149 3794.358909 3960.738638 3951.611614 3940.557586
+ENSG00000000005   24.2144404   30.188315   30.693055   23.666175   13.890252
+ENSG00000000419 1325.5164068 1340.777579 1179.680915 1515.274832 1431.764416
+ENSG00000000457  455.5902129  421.595434  476.409600  597.411015  610.102598
+ENSG00000000460 1250.1825920 1211.696508 1134.308572 1389.268441 1300.341264
+ENSG00000000938    0.8968311    1.040976    0.000000    1.279253    0.000000
+ENSG00000000971   19.7302848   18.737575    9.341365   10.234022    2.136962
+ENSG00000001036 2921.8758141 2705.497614 2642.271733 2942.281228 2971.445403
+ENSG00000001084 2691.3902143 2537.900417 2624.923484 3008.162742 3227.880821
+ENSG00000001167 2752.3747310 2513.957960 2600.902832 2948.037865 2817.584152
+                 Mov10_oe_1 Mov10_oe_2  Mov10_oe_3
+ENSG00000000003 2727.254443 2729.93541 3178.078204
+ENSG00000000005   20.395262   33.31328   33.630457
+ENSG00000000419 1541.881812 1548.19073 1942.923231
+ENSG00000000457  527.013572  518.10913  541.144629
+ENSG00000000460  965.103801  998.52166 1028.786259
+ENSG00000000938    0.000000    0.00000    0.000000
+ENSG00000000971    7.342294   17.53330    6.114629
+ENSG00000001036 2396.851197 2786.04199 2543.685489
+ENSG00000001084 1898.390993 2117.14644 2378.590517
+ENSG00000001167 2148.844811 2133.80308 2095.788946</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">counts</span>(dds,<span class="at">normalized =</span> T) <span class="sc">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="st">"feature"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">names_to =</span> <span class="st">"sample"</span>,<span class="at">values_to =</span> <span class="st">"value"</span>,<span class="sc">-</span>feature) <span class="sc">%&gt;%</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>sample,<span class="at">y=</span>value)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">scale_y_continuous</span>(<span class="at">trans =</span> <span class="st">"log1p"</span>) <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The <code>blind=TRUE</code> argument is to make sure that the <code>rlog()</code> function does not take our sample groups into account - i.e.&nbsp;does the transformation in an unbiased manner. When performing quality assessment, it is important to include this option. The <a href="http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#blind-dispersion-estimation">DESeq2 vignette</a> has more details about this.</p>
+<p>The <code>rlog()</code> function returns a <code>DESeqTransform</code> object, another type of DESeq-specific object. The reason you don’t just get a matrix of transformed values is because all of the parameters (i.e.&nbsp;size factors) that went into computing the rlog transform are stored in that object. We use this object to plot the PCA and heirarchical clustering figures for quality assessment.</p>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> The <code>rlog()</code> funtion can be a bit slow when you have e.g.&nbsp;&gt; 20 samples. In these situations the <code>vst()</code> function is much faster and performs a similar transformation appropriate for use with <code>plotPCA()</code>. It’s typically just a few seconds with <code>vst()</code> due to optimizations and the nature of the transformation.</p>
+</blockquote>
+</section>
+<section id="principal-component-analysis-pca-for-the-mov10-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="principal-component-analysis-pca-for-the-mov10-dataset">Principal component analysis (PCA) for the MOV10 dataset</h3>
+<p>We are now ready for the QC steps, let’s start with PCA!</p>
+<p>DESeq2 has a built-in function for generating PCA plots using <code>ggplot2</code> under the hood. This is great because it saves us having to type out lines of code and having to fiddle with the different ggplot2 layers. In addition, it takes the <code>rlog</code> object as an input directly, hence saving us the trouble of extracting the relevant information from it.</p>
+<p>The function <code>plotPCA()</code> requires two arguments as input: a <code>DESeqTransform</code> object and the “intgroup” (interesting group), i.e.&nbsp;the name of the column in our metadata that has information about the experimental sample groups.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Plot PCA </span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(rld, <span class="at">intgroup=</span><span class="st">"sampletype"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using ntop=500 top features by variance</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that the calculation automated in the function can be reimplemented using the base <code>prcomp</code> function:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># extrac the matrix from the object</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>object <span class="ot">&lt;-</span> <span class="fu">assay</span>(rld)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>object[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003  11.879178  11.847305  11.887679  11.885792  11.882961
+ENSG00000000005   4.675471   4.740605   4.743602   4.667962   4.553886
+ENSG00000000419  10.426581  10.436979  10.323924  10.547916  10.496205
+ENSG00000000457   8.906108   8.843049   8.944107   9.137809   9.154955
+ENSG00000000460  10.244295  10.215751  10.156250  10.341768  10.280098
+ENSG00000000938  -1.122517  -1.121425  -1.132926  -1.116357  -1.134385
+ENSG00000000971   3.598552   3.584239   3.467607   3.476901   3.365859
+ENSG00000001036  11.478492  11.406880  11.385081  11.485091  11.494183
+ENSG00000001084  11.362788  11.308184  11.339405  11.467599  11.534253
+ENSG00000001167  11.374085  11.289580  11.321077  11.439005  11.395984</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the variance for each gene </span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>rv <span class="ot">&lt;-</span> <span class="fu">rowVars</span>(object) </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(rv)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>ENSG00000000003 ENSG00000000005 ENSG00000000419 ENSG00000000457 ENSG00000000460 
+   2.402796e-02    5.969625e-03    1.802368e-02    1.176921e-02    1.434761e-02 
+ENSG00000000938 
+   5.689359e-05 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># select the ntop (500) genes by variance </span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>select <span class="ot">&lt;-</span> <span class="fu">order</span>(rv, <span class="at">decreasing=</span><span class="cn">TRUE</span>)[<span class="fu">seq_len</span>(<span class="fu">min</span>(<span class="dv">500</span>, <span class="fu">length</span>(rv)))] </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># perform a PCA on the data in assay(x) for the selected genes </span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>pca <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(<span class="fu">t</span>(object[select,]),<span class="at">scale. =</span> F) </span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>pca<span class="sc">$</span>x <span class="sc">%&gt;%</span> </span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 PC1       PC2       PC3        PC4         PC5        PC6
+Irrel_kd_1 -3.234884  3.709674  1.231206 -6.2107578 -2.73808519  3.9100980
+Irrel_kd_2 -3.293367  6.125683  0.865952 -0.1687389  0.03442372 -6.4660208
+Irrel_kd_3 -2.147486  4.706558  1.454549  4.9443425  3.70973376  3.5653044
+Mov10_kd_2 -8.225682 -5.782921 -1.130410  0.3350387 -1.40538957 -2.0558299
+Mov10_kd_3 -6.681916 -4.910359  1.164987  0.9984863  1.08407151  1.5668066
+Mov10_oe_1  6.320822 -1.298765 -6.388498 -3.0490982  4.95143227 -0.3831223
+                   PC7          PC8
+Irrel_kd_1 -0.50099315 8.104310e-15
+Irrel_kd_2  1.60641809 8.224285e-15
+Irrel_kd_3 -2.22843319 8.007477e-15
+Mov10_kd_2 -4.74695410 8.779559e-15
+Mov10_kd_3  5.70363255 9.444195e-15
+Mov10_oe_1 -0.05861654 8.472655e-15</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the contribution to the total variance for each component </span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>percentVar <span class="ot">&lt;-</span> pca<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(pca<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span>) </span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pca)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Importance of components:
+                          PC1    PC2    PC3     PC4     PC5    PC6     PC7
+Standard deviation     6.9272 4.5205 4.1637 3.52029 3.42332 3.3450 3.03305
+Proportion of Variance 0.3684 0.1569 0.1331 0.09514 0.08997 0.0859 0.07062
+Cumulative Proportion  0.3684 0.5253 0.6584 0.75351 0.84348 0.9294 1.00000
+                             PC8
+Standard deviation     9.123e-15
+Proportion of Variance 0.000e+00
+Cumulative Proportion  1.000e+00</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># label x</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>PC1.log <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"PC1 "</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">round</span>(<span class="fu">summary</span>(pca)<span class="sc">$</span>importance[<span class="dv">2</span>,][<span class="dv">1</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="at">digits =</span> <span class="dv">0</span>),</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                  <span class="st">" %"</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># label y</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>PC2.log <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"PC2 "</span>,</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">round</span>(<span class="fu">summary</span>(pca)<span class="sc">$</span>importance[<span class="dv">2</span>,][<span class="dv">2</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="at">digits =</span> <span class="dv">0</span>),</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>                  <span class="st">" %"</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the data</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>pca<span class="sc">$</span>x <span class="sc">%&gt;%</span> </span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>PC1,<span class="at">y=</span>PC2))<span class="sc">+</span><span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(PC2.log) <span class="sc">+</span> </span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(PC1.log)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Notice that in this case, to reproduce the plot we used <code>.scale=F</code> in the <code>prcomp</code> function. In fact the plotPCA function uses as input data (rlog tranformed) that have already been scaled. Therefore there is no need to scale again.</p>
+<hr>
+<p>Exercise:</p>
+<ol type="1">
+<li>What does the above plot tell you about the similarity of samples?</li>
+</ol>
+<p>Samples from different experimental groups are different, while replicates within the same group are similar.</p>
+<ol type="1">
+<li>Does it fit the expectation from the experimental design?</li>
+</ol>
+<p>Yes, it does.</p>
+<ol type="1">
+<li>What do you think the %variance information (in the axes titles) tell you about the data in the context of the PCA?</li>
+</ol>
+<p>PC1 is associated with 37% of the variance in the data, and PC2 is associated with 16%.</p>
+<hr>
+<p>By default <code>plotPCA()</code> uses the <em>top 500 most variable genes</em>. You can change this by adding the <code>ntop=</code> argument and specifying how many of the genes you want the function to consider.</p>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> The <code>plotPCA()</code> function will only return the values for PC1 and PC2. If you would like to explore the additional PCs in your data or if you would like to identify genes that contribute most to the PCs, you can use the <code>prcomp()</code> function. For example, to plot any of the PCs we could run the following code:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Input is a matrix of log transformed values</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>rld <span class="ot">&lt;-</span> <span class="fu">rlog</span>(dds, <span class="at">blind=</span>T)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>rld_mat <span class="ot">&lt;-</span> <span class="fu">assay</span>(rld)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>pca <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(<span class="fu">t</span>(rld_mat))</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create data frame with metadata and PC3 and PC4 values for input to ggplot</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">cbind</span>(meta, pca<span class="sc">$</span>x)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x=</span>PC3, <span class="at">y=</span>PC4, <span class="at">color =</span> sampletype))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><a href="http://www.sthda.com/english/wiki/principal-component-analysis-in-r-prcomp-vs-princomp-r-software-and-data-mining">Resources</a> are available to learn how to do more complex inquiries using the PCs.</p>
+</blockquote>
+</section>
+<section id="hierarchical-clustering-for-the-mov10-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="hierarchical-clustering-for-the-mov10-dataset">Hierarchical Clustering for the MOV10 dataset</h3>
+<p>There is no built-in function in DESeq2 for plotting the heatmap for displaying the pairwise correlation between all the samples and the hierarchical clustering information; we will use the <code>pheatmap()</code> function from the <code>pheatmap</code> package. This function cannot use the <code>DESeqTransform</code> object as input, but requires a matrix or dataframe. So, the first thing to do is retrieve that information from the <code>rld</code> object using a function called <code>assay()</code> (from the <code>SummarizedExperiment</code> package) that converts the data in a <code>DESeqTransform</code> object to a simple 2-dimensional data structure (a matrix in this case).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Extract the rlog matrix from the object</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>rld_mat <span class="ot">&lt;-</span> <span class="fu">assay</span>(rld)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>rld_mat[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003  11.879178  11.847305  11.887679  11.885792  11.882961
+ENSG00000000005   4.675471   4.740605   4.743602   4.667962   4.553886
+ENSG00000000419  10.426581  10.436979  10.323924  10.547916  10.496205
+ENSG00000000457   8.906108   8.843049   8.944107   9.137809   9.154955
+ENSG00000000460  10.244295  10.215751  10.156250  10.341768  10.280098
+ENSG00000000938  -1.122517  -1.121425  -1.132926  -1.116357  -1.134385
+ENSG00000000971   3.598552   3.584239   3.467607   3.476901   3.365859
+ENSG00000001036  11.478492  11.406880  11.385081  11.485091  11.494183
+ENSG00000001084  11.362788  11.308184  11.339405  11.467599  11.534253
+ENSG00000001167  11.374085  11.289580  11.321077  11.439005  11.395984</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="do">## "assay()" is part of the "SummarizedExperiment" package which is a DESeq2 dependency and is loaded with the DESeq2 library</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we need to compute the pairwise correlation values for all the samples. We can do this using the <code>cor()</code> function:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Compute pairwise correlation values</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>rld_cor <span class="ot">&lt;-</span> <span class="fu">cor</span>(rld_mat)    <span class="do">## cor() is a base R function</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>rld_cor</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3 Mov10_oe_1
+Irrel_kd_1  1.0000000  0.9997740  0.9997525  0.9996005  0.9996334  0.9995372
+Irrel_kd_2  0.9997740  1.0000000  0.9997564  0.9995701  0.9996137  0.9995441
+Irrel_kd_3  0.9997525  0.9997564  1.0000000  0.9995460  0.9996014  0.9995541
+Mov10_kd_2  0.9996005  0.9995701  0.9995460  1.0000000  0.9997927  0.9993895
+Mov10_kd_3  0.9996334  0.9996137  0.9996014  0.9997927  1.0000000  0.9994757
+Mov10_oe_1  0.9995372  0.9995441  0.9995541  0.9993895  0.9994757  1.0000000
+Mov10_oe_2  0.9995326  0.9995407  0.9995620  0.9993608  0.9994457  0.9997794
+Mov10_oe_3  0.9994112  0.9994279  0.9994254  0.9992364  0.9993479  0.9996902
+           Mov10_oe_2 Mov10_oe_3
+Irrel_kd_1  0.9995326  0.9994112
+Irrel_kd_2  0.9995407  0.9994279
+Irrel_kd_3  0.9995620  0.9994254
+Mov10_kd_2  0.9993608  0.9992364
+Mov10_kd_3  0.9994457  0.9993479
+Mov10_oe_1  0.9997794  0.9996902
+Mov10_oe_2  1.0000000  0.9996625
+Mov10_oe_3  0.9996625  1.0000000</code></pre>
+</div>
+</div>
+<p>Let’s take a look at the column and row names of the correlation matrix.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="do">## check the output of cor(), make note of the row names and column names</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(rld_cor)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3 Mov10_oe_1
+Irrel_kd_1  1.0000000  0.9997740  0.9997525  0.9996005  0.9996334  0.9995372
+Irrel_kd_2  0.9997740  1.0000000  0.9997564  0.9995701  0.9996137  0.9995441
+Irrel_kd_3  0.9997525  0.9997564  1.0000000  0.9995460  0.9996014  0.9995541
+Mov10_kd_2  0.9996005  0.9995701  0.9995460  1.0000000  0.9997927  0.9993895
+Mov10_kd_3  0.9996334  0.9996137  0.9996014  0.9997927  1.0000000  0.9994757
+Mov10_oe_1  0.9995372  0.9995441  0.9995541  0.9993895  0.9994757  1.0000000
+           Mov10_oe_2 Mov10_oe_3
+Irrel_kd_1  0.9995326  0.9994112
+Irrel_kd_2  0.9995407  0.9994279
+Irrel_kd_3  0.9995620  0.9994254
+Mov10_kd_2  0.9993608  0.9992364
+Mov10_kd_3  0.9994457  0.9993479
+Mov10_oe_1  0.9997794  0.9996902</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(meta)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                     sampletype
+Irrel_kd_1              control
+Irrel_kd_2              control
+Irrel_kd_3              control
+Mov10_kd_2      MOV10_knockdown
+Mov10_kd_3      MOV10_knockdown
+Mov10_oe_1 MOV10_overexpression</code></pre>
+</div>
+</div>
+<p>You will notice that they match the names we have given our samples in the metadata data frame we started with. It is important that these match, so we can use the <code>annotation</code> argument below to plot a color block across the top. This block enables easy visualization of the hierarchical clustering.</p>
+<p>Let’s plot the heatmap!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Load pheatmap package</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="do">### Plot heatmap using the correlation matrix and the metadata object</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(rld_cor, <span class="at">annotation =</span> meta)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>When you plot using <code>pheatmap()</code> the hierarchical clustering information is used to place similar samples together and this information is represented by the tree structure along the axes. The <code>annotation</code> argument accepts a dataframe as input, in our case it is the <code>meta</code> data frame.</p>
+<p>Overall, we observe pretty high correlations across the board ( &gt; 0.999) suggesting no outlying sample(s). Also, similar to the PCA plot you see the samples clustering together by sample group. Together, these plots suggest to us that the data are of good quality and we have the green light to proceed to differential expression analysis.</p>
+<blockquote class="blockquote">
+<p>NOTE: The <code>pheatmap</code> function has a number of different arguments that we can alter from default values to enhance the aesthetics of the plot. If you are curious and want to explore more, try running the code below. <em>How does your plot change?</em> Take a look through the help pages (<code>?pheatmap</code>) and identify what each of the added arguments is contributing to the plot.</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>heat.colors <span class="ot">&lt;-</span> RColorBrewer<span class="sc">::</span><span class="fu">brewer.pal</span>(<span class="dv">6</span>, <span class="st">"Blues"</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(rld_cor, <span class="at">annotation =</span> meta, <span class="at">color =</span> heat.colors, <span class="at">border_color=</span><span class="cn">NA</span>, <span class="at">fontsize =</span> <span class="dv">10</span>, </span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">fontsize_row =</span> <span class="dv">10</span>, <span class="at">height=</span><span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Curious about all of the available <a href="http://www.r-graph-gallery.com/38-rcolorbrewers-palettes/">color palettes offered by the RColorBrewer package</a>? Try typing in your console <code>display.brewer.all()</code> and see what happens!</p>
+</blockquote>
+<p>Here the test of the snippet:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>heat.colors <span class="ot">&lt;-</span> RColorBrewer<span class="sc">::</span><span class="fu">brewer.pal</span>(<span class="dv">6</span>, <span class="st">"Blues"</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(rld_cor, <span class="at">annotation =</span> meta, <span class="at">color =</span> heat.colors, <span class="at">border_color=</span><span class="cn">NA</span>, <span class="at">fontsize =</span> <span class="dv">10</span>,</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">fontsize_row =</span> <span class="dv">10</span>, <span class="at">height=</span><span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here the test of the palette</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">display.brewer.all</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The heatmap can also be plotted using the <code>ComplexHeatmap</code> package, which seems to be more flexible:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ComplexHeatmap)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># automatic choice for the colour palette</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>column_ha_auto <span class="ot">&lt;-</span> <span class="fu">HeatmapAnnotation</span>(<span class="at">cond =</span> meta<span class="sc">$</span>sampletype)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>ht_auto <span class="ot">&lt;-</span> <span class="fu">Heatmap</span>(rld_cor,</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">name =</span> <span class="st">"cor"</span>,</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">top_annotation =</span> column_ha_auto,</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">column_title =</span> <span class="st">"cond"</span>) </span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="fu">draw</span>(ht_auto,<span class="at">heatmap_legend_side =</span> <span class="st">"left"</span>,<span class="at">annotation_legend_side =</span> <span class="st">"left"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># manual choice</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>column_ha_manual <span class="ot">&lt;-</span> <span class="fu">HeatmapAnnotation</span>(<span class="at">cond =</span> meta<span class="sc">$</span>sampletype,</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">col =</span> <span class="fu">list</span>(<span class="at">cond =</span> <span class="fu">c</span>(<span class="st">"control"</span> <span class="ot">=</span> <span class="st">"green"</span>,</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>                                                          <span class="st">"MOV10_knockdown"</span> <span class="ot">=</span> <span class="st">"yellow"</span>,</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>                                                          <span class="st">"MOV10_overexpression"</span> <span class="ot">=</span> <span class="st">"red"</span>))</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>                                      )</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>ht_manual <span class="ot">&lt;-</span> <span class="fu">Heatmap</span>(rld_cor,</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">name =</span> <span class="st">"cor"</span>,</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">top_annotation =</span> column_ha_manual,</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">column_title =</span> <span class="st">"cond"</span>) </span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a><span class="fu">draw</span>(ht_manual,<span class="at">heatmap_legend_side =</span> <span class="st">"left"</span>,<span class="at">annotation_legend_side =</span> <span class="st">"left"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-10-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># manual with a palette 1</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="co"># define a palette of colors</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pals)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="co"># build a vector of colors</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>color_id <span class="ot">&lt;-</span> <span class="fu">tableau20</span>(<span class="fu">length</span>(<span class="fu">unique</span>(meta<span class="sc">$</span>sampletype)))</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="co"># name the vector</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(color_id) <span class="ot">&lt;-</span> <span class="fu">unique</span>(meta<span class="sc">$</span>sampletype <span class="sc">%&gt;%</span> <span class="fu">unlist</span>())</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>color_id</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             control      MOV10_knockdown MOV10_overexpression 
+           "#1F77B4"            "#AEC7E8"            "#FF7F0E" </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show_col</span>(color_id)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-10-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>column_ha_manual <span class="ot">&lt;-</span> <span class="fu">HeatmapAnnotation</span>(<span class="at">cond =</span> meta<span class="sc">$</span>sampletype,</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">col =</span> <span class="fu">list</span>(<span class="at">cond =</span> color_id))</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>ht_manual <span class="ot">&lt;-</span> <span class="fu">Heatmap</span>(rld_cor,</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">name =</span> <span class="st">"cor"</span>,</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">top_annotation =</span> column_ha_manual,</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">column_title =</span> <span class="st">"cond"</span>) </span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="fu">draw</span>(ht_manual,<span class="at">heatmap_legend_side =</span> <span class="st">"left"</span>,<span class="at">annotation_legend_side =</span> <span class="st">"left"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-10-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># manual with a palette 2</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="co"># define a palette of colors</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(randomcoloR)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="co"># build a vector of colors</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>color_id2 <span class="ot">&lt;-</span> <span class="fu">distinctColorPalette</span>(meta<span class="sc">$</span>sampletype <span class="sc">%&gt;%</span> <span class="fu">unique</span>() <span class="sc">%&gt;%</span> <span class="fu">length</span>())</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="co"># name the vector</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(color_id2) <span class="ot">&lt;-</span> <span class="fu">unique</span>(meta<span class="sc">$</span>sampletype <span class="sc">%&gt;%</span> <span class="fu">unlist</span>())</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>color_id2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             control      MOV10_knockdown MOV10_overexpression 
+           "#BF70CD"            "#AEC6C9"            "#C0D477" </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show_col</span>(color_id2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-10-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>column_ha_manual2 <span class="ot">&lt;-</span> <span class="fu">HeatmapAnnotation</span>(<span class="at">cond =</span> meta<span class="sc">$</span>sampletype,</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">col =</span> <span class="fu">list</span>(<span class="at">cond =</span> color_id2))</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>ht_manual2 <span class="ot">&lt;-</span> <span class="fu">Heatmap</span>(rld_cor,</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">name =</span> <span class="st">"cor"</span>,</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">top_annotation =</span> column_ha_manual2,</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">column_title =</span> <span class="st">"cond"</span>) </span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="fu">draw</span>(ht_manual2,<span class="at">heatmap_legend_side =</span> <span class="st">"left"</span>,<span class="at">annotation_legend_side =</span> <span class="st">"left"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="23_QC_files/figure-html/unnamed-chunk-10-6.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

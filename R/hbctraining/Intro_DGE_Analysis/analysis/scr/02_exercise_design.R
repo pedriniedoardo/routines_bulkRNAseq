@@ -82,3 +82,32 @@ imagemat(X4)
 # test if the matrix is co-linear
 dim(X4)
 qr(X4)$rank
+
+# solution provided -------------------------------------------------------
+# solution provided by the authors
+metadata_solution <- data.frame(
+  sample = paste0("sample", 1:12),
+  treatment = rep(c("A", "B", "C"), each = 4),
+  sex = rep(c("F", "M"), each = 2, times = 3),
+  replicate = rep(1:4, times = 3),
+  `batch` = c("group1", "group2", "group3", "group4", 
+                      "group3", "group5", "group1", "group6", 
+                      "group4", "group6", "group2", "group5"),
+  user = c("AB", "CD", "AB", "CD", "AB", "CD", "AB", "CD", 
+                 "CD", "AB", "CD", "AB"),
+  stringsAsFactors = FALSE, # Good practice to avoid factors by default
+  check.names = FALSE # Allows the space in "RNA isolation"
+)
+
+# Print the resulting table
+metadata_solution
+
+X5 <- model.matrix(~ treatment + sex + batch + user,data = metadata_solution)
+X5
+imagemat(X5)
+
+# test if the matrix is co-linear
+dim(X5)
+qr(X5)$rank
+
+

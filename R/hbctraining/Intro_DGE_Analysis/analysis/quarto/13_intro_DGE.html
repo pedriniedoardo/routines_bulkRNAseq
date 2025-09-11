@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Set up and overview for gene-level differential expression analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="13_intro_DGE_files/libs/clipboard/clipboard.min.js"></script>
+<script src="13_intro_DGE_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="13_intro_DGE_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="13_intro_DGE_files/libs/quarto-html/popper.min.js"></script>
+<script src="13_intro_DGE_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="13_intro_DGE_files/libs/quarto-html/anchor.min.js"></script>
+<link href="13_intro_DGE_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="13_intro_DGE_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="13_intro_DGE_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="13_intro_DGE_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="13_intro_DGE_files/libs/bootstrap/bootstrap-05cc275de2cb3139844e2d4d6308aaf1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Set up and overview for gene-level differential expression analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="learning-objectives" class="level2">
+<h2 class="anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<ul>
+<li>Describe the RNA-seq and the differential gene expression analysis workflow</li>
+<li>Explain the experiment and its objectives</li>
+<li>Create a project in R</li>
+<li>Setup for the analysis of RNA-seq data</li>
+</ul>
+</section>
+<section id="differential-gene-expression-analysis" class="level1">
+<h1>Differential gene expression analysis</h1>
+<p>Over the past decade, RNA sequencing (RNA-seq) has become an indispensable tool for transcriptome-wide analysis of differential gene expression and differential splicing of mRNAs<a href="https://www.nature.com/articles/s41576-019-0150-2">1</a>. The correct identification of which genes/transcripts are changing in expression between specific conditions is key in our understanding of the biological processes that are affected.</p>
+<p>In this workshop, we will walk you through an <strong>end-to-end gene-level RNA-seq differential expression workflow</strong> using various R packages. We will start with reading in data obtained from Salmon, convert pseudocounts to counts, perform exploratory data analysis for quality assessment and to explore the relationship between samples, perform differential expression analysis, and visually explore the results prior to performing downstream functional analysis.</p>
+<div id="fig-salmon" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-salmon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/de_workflow_salmon.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>salmon</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-salmon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1
+</figcaption>
+</figure>
+</div>
+<section id="review-of-the-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="review-of-the-dataset">Review of the dataset</h2>
+<p>For this workshop, we will be using a publicly available RNA-Seq dataset that is part of a larger study described in <a href="http://www.ncbi.nlm.nih.gov/pubmed/25464849">Kenny PJ et al, Cell Rep 2014</a>.</p>
+<p>The RNA-Seq was performed on HEK293F cells that were either transfected with a MOV10 transgene, or siRNA to knock down Mov10 expression, or non-specific (irrelevant) siRNA. This resulted in 3 conditions <strong>Mov10 oe</strong> (over expression), <strong>Mov10 kd</strong> (knock down) and <strong>Irrelevant kd</strong>, respectively. The number of replicates is as shown below.</p>
+<p>Using these data, we will evaluate transcriptional patterns associated with perturbation of MOV10 expression. Please note that the irrelevant siRNA will be treated as our control condition.</p>
+<div id="fig-dataset" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-dataset-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/dataset.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>dataset</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-dataset-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2
+</figcaption>
+</figure>
+</div>
+<p><strong><em>What is the purpose of these datasets? What does Mov10 do?</em></strong></p>
+<p>The authors are investigating interactions between various genes involved in Fragile X syndrome, a disease in which there is aberrant production of the FMRP protein.</p>
+<blockquote class="blockquote">
+<p><strong>FMRP</strong> is “most commonly found in the brain, is essential for normal cognitive development and female reproductive function. Mutations of this gene can lead to fragile X syndrome, mental retardation, premature ovarian failure, autism, Parkinson’s disease, developmental delays and other cognitive deficits.” - from <a href="https://en.wikipedia.org/wiki/FMR1">wikipedia</a></p>
+</blockquote>
+<blockquote class="blockquote">
+<p><strong>MOV10</strong>, is a putative RNA helicase that is also associated with <strong>FMRP</strong> in the context of the microRNA pathway.</p>
+</blockquote>
+<p><strong>The hypothesis <a href="http://www.ncbi.nlm.nih.gov/pubmed/25464849">the paper</a> is testing is that FMRP and MOV10 associate and regulate the translation of a subset of RNAs.</strong></p>
+<div id="fig-model" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-model-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/mov10-model.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>model</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-model-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3
+</figcaption>
+</figure>
+</div>
+<p><strong>Our questions:</strong> * What patterns of expression can we identify with the loss or gain of MOV10? * Are there any genes shared between the two conditions?</p>
+<section id="rna-seq-workflow" class="level3">
+<h3 class="anchored" data-anchor-id="rna-seq-workflow">RNA-seq workflow</h3>
+<p>For this dataset, raw sequence reads were obtained from the <a href="https://www.ncbi.nlm.nih.gov/sra/?term=SRP029367">Sequence Read Archive (SRA)</a>. These reads were then processed using the RNA-seq workflow as detailed in the <a href="01a_RNAseq_processing_workflow.md">pre-reading for this workshop</a>. All steps were performed on the command line (Linux/Unix), including a thorough quality control assessment. If you are interested, we have the <strong>MultiQC html report for this dataset <a href="https://github.com/hbctraining/DGE_workshop_salmon_online/raw/master/data/multiqc_report_rnaseq.html.zip">linked here</a></strong> for you to peruse.</p>
+<p>The directories of output from the mapping/quantification step of the workflow (Salmon) is the data that we will be using. These transcript abundance estimates, often referred to as <strong>‘pseudocounts’, will be the starting point for our differential gene expression analysis</strong>.</p>
+</section>
+</section>
+<section id="setting-up" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up">Setting up</h2>
+<p>Let’s get started by opening up RStudio and setting up a new project for this analysis.</p>
+<ol type="1">
+<li>Go to the <code>File</code> menu and select <code>New Project</code>.</li>
+<li>In the <code>New Project</code> window, choose <code>New Directory</code>. Then, choose <code>New Project</code>. Name your new directory <code>DEanalysis</code> and then “Create the project as subdirectory of:” the Desktop (or location of your choice).</li>
+<li>The new project should automatically open in RStudio.</li>
+</ol>
+<div id="fig-gif" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gif-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/Create_RStudio_Project.gif" class="img-fluid figure-img" width="900"></p>
+<figcaption>gif</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-gif-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4
+</figcaption>
+</figure>
+</div>
+<p>To check whether or not you are in the correct working directory, use <code>getwd()</code>. The path <code>Desktop/DEanalysis</code> should be returned to you in the console. Within your working directory use the <code>New folder</code> button in the bottom right panel to create two new directories: <code>meta</code> and <code>results</code>. Remember the key to a good analysis is keeping organized from the start! (<em>NOTE: we will be downloading our <code>data</code> folder`</em>)</p>
+<p>Now we need to grab the files that we will be working with for the analysis. There are two things we need to download.</p>
+<ol type="1">
+<li>First we need the <strong>Salmon results for the full dataset</strong>. <em>Right click on the links below, and choose the “Save link as …” option to download directly into your project directory</em>:</li>
+</ol>
+<ul>
+<li><a href="https://www.dropbox.com/s/oz9yralwbtphw8u/data.zip?dl=1">Salmon data</a> for the Mov10 full dataset</li>
+</ul>
+<p>Once you have the zip file downloaded you will want to decompress it. This will create a <code>data</code> directory with sub-directories that correspond to each of the samples in our dataset.</p>
+<ol start="2" type="1">
+<li>Next, we need the <strong>annotation file</strong> which maps our transcript identifiers to gene identifiers. We have created this file for you using the R Bioconductor package <a href="https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html">AnnotationHub</a>. For now, we will use it as is but later in the workshop we will spend some time showing you how to create one for yourself. <em>Right click on the links below, and choose the “Save link as …” option to download directly into your project directory.</em></li>
+</ol>
+<ul>
+<li><a href="https://github.com/hbctraining/DGE_workshop_salmon/raw/master/data/tx2gene_grch38_ens94.txt">Annotation file</a></li>
+</ul>
+<p>Finally, go to the <code>File</code> menu and select <code>New File</code>, then select <code>R Script</code>. This should open up a script editor in the top left hand corner. This is where we will be typing and saving all commands required for this analysis. In the script editor type in header lines:</p>
+<pre><code>## Gene-level differential expression analysis using DESeq2</code></pre>
+<p>Now save the file as <code>de_script.R</code>. When finished your working directory should now look similar to this:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../img/settingup.png" class="img-fluid figure-img"></p>
+<figcaption>setup</figcaption>
+</figure>
+</div>
+<section id="loading-libraries" class="level3">
+<h3 class="anchored" data-anchor-id="loading-libraries">Loading libraries</h3>
+<p>For this analysis we will be using several R packages, some which have been installed from CRAN and others from Bioconductor. To use these packages (and the functions contained within them), we need to <strong>load the libraries.</strong> Add the following to your script and don’t forget to comment liberally!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Setup</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="do">### Bioconductor and CRAN libraries used</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DEGreport)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="loading-data" class="level3">
+<h3 class="anchored" data-anchor-id="loading-data">Loading data</h3>
+<p>The main output of Salmon is a <code>quant.sf</code> file, and we have one of these for each individual sample in our dataset. An screenshot of the file is displayed below:</p>
+<div id="fig-quant" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-quant-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/quant_screenshot.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>quant</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-quant-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5
+</figcaption>
+</figure>
+</div>
+<p>For each transcript that was assayed in the reference, we have:</p>
+<ol type="1">
+<li>The transcript identifier</li>
+<li>The transcript length (in bp)</li>
+<li>The effective length (described in detail below)</li>
+<li>TPM (transcripts per million), which is computed using the effective length</li>
+<li>The estimated read count (‘pseudocount’)</li>
+</ol>
+<blockquote class="blockquote">
+<h4 id="what-exactly-is-the-effective-length" class="anchored">What exactly is the effective length?</h4>
+<p>The effective length for a transcript is the essentially <strong>the number of possible start positions for a read or fragment within that transcript</strong>. The sequence composition of a transcript affects how many reads are sampled from it. While two transcripts might be of identical actual length, depending on the sequence composition we are more likely to generate fragments from one versus the other. The transcript that has a higer likelihood of being sampled, will end up with the larger effective length. The effective length is transcript length which has been “corrected” to include factors due to sequence-specific and GC biases.</p>
+</blockquote>
+<p>We will be using the R Bioconductor package <code>tximport</code> to prepare the <code>quant.sf</code> files for DESeq2. The first thing we need to do is create a variable that contains the paths to each of our <code>quant.sf</code> files. Then we will <strong>add names to our quant files which will allow us to easily distinguish between samples in the final output matrix</strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## List all directories containing data  </span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="at">path =</span> <span class="st">"../../data/data"</span>, <span class="at">full.names =</span> T, <span class="at">pattern=</span><span class="st">"salmon$"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Obtain a vector of all filenames including the path</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">file.path</span>(samples, <span class="st">"quant.sf"</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Since all quant files have the same name it is useful to have names for each element</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(files) <span class="ot">&lt;-</span> <span class="fu">str_replace</span>(samples, <span class="st">"../../data/data/"</span>, <span class="st">""</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                <span class="fu">str_replace</span>(<span class="st">".salmon"</span>, <span class="st">""</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>files</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                  Irrel_kd_1 
+"../../data/data/Irrel_kd_1.salmon/quant.sf" 
+                                  Irrel_kd_2 
+"../../data/data/Irrel_kd_2.salmon/quant.sf" 
+                                  Irrel_kd_3 
+"../../data/data/Irrel_kd_3.salmon/quant.sf" 
+                                  Mov10_kd_2 
+"../../data/data/Mov10_kd_2.salmon/quant.sf" 
+                                  Mov10_kd_3 
+"../../data/data/Mov10_kd_3.salmon/quant.sf" 
+                                  Mov10_oe_1 
+"../../data/data/Mov10_oe_1.salmon/quant.sf" 
+                                  Mov10_oe_2 
+"../../data/data/Mov10_oe_2.salmon/quant.sf" 
+                                  Mov10_oe_3 
+"../../data/data/Mov10_oe_3.salmon/quant.sf" </code></pre>
+</div>
+</div>
+<p>Our Salmon index was generated with transcript sequences listed by Ensembl IDs, but <code>tximport</code> needs to know <strong>which genes these transcripts came from</strong>. We will use the annotation table that we downloaded to extract transcript to gene information.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the annotation table for GrCh38</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="st">"../../data/tx2gene_grch38_ens94.txt"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Take a look at it </span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="sc">%&gt;%</span> <span class="fu">View</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong><code>tx2gene</code></strong> is a three-column <strong>data frame linking transcript ID (column 1) to gene ID (column 2)</strong> to gene symbol (column 3). We will take the first two columns as input to <code>tximport</code>. The <strong>column names are not relevant, but the column order is (i.e transcript ID must be first).</strong></p>
+<p>Now we are ready to <strong>run <code>tximport</code></strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>?tximport   <span class="co"># let's take a look at the arguments for the tximport function</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>tximport()</code> function imports transcript-level estimates from various external software (e.g.&nbsp;Salmon, Kallisto) and summarizes to the gene-level (default) or outputs transcript-level matrices. There are optional arguments to use the abundance estimates as they appear in the <code>quant.sf</code> files or to calculate alternative values.</p>
+<p>For our analysis we <strong>need non-normalized or “raw” count estimates at the gene-level for performing DESeq2 analysis</strong>.</p>
+<p>Since the gene-level count matrix is a default (<code>txOut=FALSE</code>) there is only one additional argument for us to modify <strong>to specify how to obtain our “raw” count values</strong>. The options for <code>countsFromAbundance</code> are as follows:</p>
+<ul>
+<li><code>no</code> (default): This will take the values in TPM (as our scaled values) and NumReads (as our “raw” counts) columns, and collapse it down to the gene-level.</li>
+<li><code>scaledTPM</code>: This is taking the TPM scaled up to library size as our “raw” counts</li>
+<li><code>lengthScaledTPM</code>: This is used to generate the “raw” count table from the TPM (rather than summarizing the NumReads column). “Raw” count values are generated by using the TPM value x featureLength x library size. These represent quantities that are on the same scale as original counts, except no longer correlated with transcript length across samples.</li>
+</ul>
+<blockquote class="blockquote">
+<p>Let’s review how TPM values are calculated: 1. Divide the read counts by the length of each gene in kilobases. This gives you reads per kilobase (RPK). 2. Count up all the RPK values in a sample and divide this number by 1,000,000. This is your “per million” scaling factor. 3. Divide the RPK values by the “per million” scaling factor. This gives you TPM.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run tximport</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type=</span><span class="st">"salmon"</span>, <span class="at">tx2gene=</span>tx2gene[,<span class="fu">c</span>(<span class="st">"tx_id"</span>, <span class="st">"ensgene"</span>)], <span class="at">countsFromAbundance=</span><span class="st">"lengthScaledTPM"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>reading in files with read_tsv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>1 2 3 4 5 6 7 8 
+transcripts missing from tx2gene: 243
+summarizing abundance
+summarizing counts
+summarizing length</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># se the structure of the object</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>List of 4
+ $ abundance          : num [1:57761, 1:8] 63.78 0.69 47.79 4.31 17.55 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:57761] "ENSG00000000003" "ENSG00000000005" "ENSG00000000419" "ENSG00000000457" ...
+  .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
+ $ counts             : num [1:57761, 1:8] 4375.8 27.3 1478.2 507.9 1393.7 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:57761] "ENSG00000000003" "ENSG00000000005" "ENSG00000000419" "ENSG00000000457" ...
+  .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
+ $ length             : num [1:57761, 1:8] 1805 1090 809 2974 2020 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:57761] "ENSG00000000003" "ENSG00000000005" "ENSG00000000419" "ENSG00000000457" ...
+  .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
+ $ countsFromAbundance: chr "lengthScaledTPM"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the object</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(txi,<span class="st">"../../out/object/txi.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p><strong>An additional argument for <code>tximport</code></strong>: When performing your own analysis you may find that the reference transcriptome file you obtain from Ensembl will have version numbers included on your identifiers (i.e ENSG00000265439.2). This will cause a discrepancy with the tx2gene file since the annotation databases don’t usually contain version numbers (i.e ENSG00000265439). To get around this issue you can use the argument <code>ignoreTxVersion    = TRUE</code>. The logical value indicates whether to split the tx id on the ‘.’ character to remove version information, for easier matching.</p>
+</blockquote>
+</section>
+<section id="viewing-data" class="level3">
+<h3 class="anchored" data-anchor-id="viewing-data">Viewing data</h3>
+<p>The <code>txi</code> object is a simple list containing matrices of the abundance, counts, length. Another list element ‘countsFromAbundance’ carries through the character argument used in the tximport call. The length matrix contains the average transcript length for each gene which can be used as an offset for gene-level analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attributes</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$names
+[1] "abundance"           "counts"              "length"             
+[4] "countsFromAbundance"</code></pre>
+</div>
+</div>
+<p>We will be using the <code>txi</code> object as is, for input into DESeq2 but will save it until the next lesson. <strong>For now let’s take a look at the count matrix.</strong> You will notice that there are decimal values, so let’s round to the nearest whole number and convert it into a dataframe. We wil save it to a variable called <code>data</code> that we can play with.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the counts</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>txi<span class="sc">$</span>counts <span class="sc">%&gt;%</span> <span class="fu">View</span>()</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Write the counts to an object</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> txi<span class="sc">$</span>counts <span class="sc">%&gt;%</span> </span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">round</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>()</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>data[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003       4376       3645       2968       6178       3688
+ENSG00000000005         27         29         23         37         13
+ENSG00000000419       1478       1288        884       2369       1340
+ENSG00000000457        508        405        357        934        571
+ENSG00000000460       1394       1164        850       2172       1217
+ENSG00000000938          1          1          0          2          0
+ENSG00000000971         22         18          7         16          2
+ENSG00000001036       3258       2599       1980       4600       2781
+ENSG00000001084       3001       2438       1967       4703       3021
+ENSG00000001167       3069       2415       1949       4609       2637
+                Mov10_oe_1 Mov10_oe_2 Mov10_oe_3
+ENSG00000000003       3343       3114       2079
+ENSG00000000005         25         38         22
+ENSG00000000419       1890       1766       1271
+ENSG00000000457        646        591        354
+ENSG00000000460       1183       1139        673
+ENSG00000000938          0          0          0
+ENSG00000000971          9         20          4
+ENSG00000001036       2938       3178       1664
+ENSG00000001084       2327       2415       1556
+ENSG00000001167       2634       2434       1371</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the raw table of counts</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(data,<span class="st">"../../out/object/raw_count.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<h3 id="what-if-i-dont-have-salmon-pseudocounts-as-input" class="anchored">What if I don’t have Salmon pseudocounts as input?</h3>
+<p>Until recently, the standard approach for RNA-seq analysis had been to map our reads using a splice-aware aligner (i.e STAR) and then use the resulting BAM files as input to counting tools like <a href="https://subread.sourceforge.net/">featureCounts</a> and <a href="https://htseq.readthedocs.io/en/release_0.11.1/count.html">htseq-count</a> to obtain our final expression matrix. The field has now moved towards using lightweight alignment tools like Salmon as standard practice. If you are still working with data generated using the older standard approach we have some <a href="https://hbctraining.github.io/DGE_workshop/schedule/1.5-day.html">materials linked here</a> on <strong>using DESeq2 with a raw count matrix as your starting point</strong>.</p>
+</blockquote>
+</section>
+<section id="creating-metadata" class="level3">
+<h3 class="anchored" data-anchor-id="creating-metadata">Creating metadata</h3>
+<p>Of great importance is keeping track of the information about our data. At minimum, we need to at least <strong>have a file which maps our samples to the corresponding sample groups that we are investigating</strong>. We will use the columns headers from the counts matrix as the row names of our metadata file and have single column to identify each sample as “MOV10_overexpression”, “MOV10_knockdown”, or “control”.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Create a sampletable/metadata</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>sampletype <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">"control"</span>,<span class="dv">3</span>), <span class="fu">rep</span>(<span class="st">"MOV10_knockdown"</span>, <span class="dv">2</span>), <span class="fu">rep</span>(<span class="st">"MOV10_overexpression"</span>, <span class="dv">3</span>)))</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(sampletype, <span class="at">row.names =</span> <span class="fu">colnames</span>(txi<span class="sc">$</span>counts))</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>meta</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                     sampletype
+Irrel_kd_1              control
+Irrel_kd_2              control
+Irrel_kd_3              control
+Mov10_kd_2      MOV10_knockdown
+Mov10_kd_3      MOV10_knockdown
+Mov10_oe_1 MOV10_overexpression
+Mov10_oe_2 MOV10_overexpression
+Mov10_oe_3 MOV10_overexpression</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the metadata table</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(meta,<span class="st">"../../out/object/metadata.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>Now we are all set to start our analysis!</strong></p>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

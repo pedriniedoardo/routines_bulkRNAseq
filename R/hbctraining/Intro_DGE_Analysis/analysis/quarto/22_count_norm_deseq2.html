@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Count normalization with DESeq2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="22_count_norm_deseq2_files/libs/clipboard/clipboard.min.js"></script>
+<script src="22_count_norm_deseq2_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="22_count_norm_deseq2_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="22_count_norm_deseq2_files/libs/quarto-html/popper.min.js"></script>
+<script src="22_count_norm_deseq2_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="22_count_norm_deseq2_files/libs/quarto-html/anchor.min.js"></script>
+<link href="22_count_norm_deseq2_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="22_count_norm_deseq2_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="22_count_norm_deseq2_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="22_count_norm_deseq2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="22_count_norm_deseq2_files/libs/bootstrap/bootstrap-05cc275de2cb3139844e2d4d6308aaf1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Count normalization with DESeq2</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="learning-objectives" class="level2">
+<h2 class="anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<ul>
+<li>List different “uninteresting factors” considered during normalization</li>
+<li>Describe some common normalization methods and recommendations for its use</li>
+<li>Create a <code>DESeqDataSet</code> object and discuss the structure of the object</li>
+<li>Demonstrate how to normalize counts using DESeq2</li>
+</ul>
+</section>
+<section id="normalization" class="level2">
+<h2 class="anchored" data-anchor-id="normalization">Normalization</h2>
+<p>The first step in the DE analysis workflow is count normalization, which is necessary to make accurate comparisons of gene expression between samples.</p>
+<div id="fig-norm" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-norm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/de_workflow_salmon_normalization.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>norm</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-norm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1
+</figcaption>
+</figure>
+</div>
+<p>The counts of mapped reads for each gene is the result of RNA expression (“interesting” part) in addition to many other factors (“uninteresting” part). Normalization is the process of adjusting raw count values to account for the “uninteresting” factors. In this way the expression levels are more comparable between and/or within samples.</p>
+<p>The main “uninteresting” factors often considered during normalization are:</p>
+<ul>
+<li><strong>Sequencing depth:</strong> Accounting for sequencing depth is necessary for comparison of gene expression between samples. In the example below, each gene appears to have twice the expression in <em>Sample A</em> relative to <em>Sample B</em>. However, this is the consequence of <em>Sample A</em> having doubled sequencing depth.</li>
+</ul>
+<div id="fig-norm2" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-norm2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/normalization_methods_depth.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>norm2</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-norm2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2
+</figcaption>
+</figure>
+</div>
+<blockquote class="blockquote">
+<p><em><strong>NOTE:</strong> In the figure above, each pink and green rectangle represents a read aligned to a gene. Reads connected by dashed lines connect a read spanning an intron.</em></p>
+</blockquote>
+<ul>
+<li><strong>Gene length:</strong> Accounting for gene length is necessary for comparing expression between different genes within the same sample. In the example below, <em>Gene X</em> and <em>Gene Y</em> have similar levels of expression, but the number of reads mapped to <em>Gene X</em> would be many more than the number mapped to <em>Gene Y</em> because <em>Gene X</em> is longer.</li>
+</ul>
+<div id="fig-norm3" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-norm3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/normalization_methods_length.png" class="img-fluid figure-img" width="200"></p>
+<figcaption>norm3</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-norm3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3
+</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>RNA composition:</strong> A few highly differentially expressed genes between samples, differences in the number of genes expressed between samples, or presence of contamination can skew some types of normalization methods. Accounting for RNA composition is recommended for accurate comparison of expression between samples, and is particularly important when performing differential expression analyses [<a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106">1</a>].</li>
+</ul>
+<p>In the example below, imagine the sequencing depths are similar between Sample A and Sample B, and every gene except for gene DE presents similar expression level between samples. The counts in Sample B would be greatly skewed by the DE gene, which takes up most of the counts. Other genes for Sample B would therefore appear to be less expressed than those same genes in Sample A.</p>
+<div id="fig-norm4" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-norm4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/normalization_methods_composition.png" class="img-fluid figure-img" width="400"></p>
+<figcaption>norm4</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-norm4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4
+</figcaption>
+</figure>
+</div>
+<p><strong><em>While normalization is essential for differential expression analyses, it is also necessary for exploratory data analysis, visualization of data, and whenever you are exploring or comparing counts between or within samples.</em></strong></p>
+<section id="common-normalization-methods" class="level3">
+<h3 class="anchored" data-anchor-id="common-normalization-methods">Common normalization methods</h3>
+<p>Several common normalization methods have been developed to account for these differences:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">Normalization method</th>
+<th style="text-align: center;">Description</th>
+<th style="text-align: center;">Accounted factors</th>
+<th style="text-align: center;">Recommendations for use</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>CPM</strong> (counts per million)</td>
+<td style="text-align: center;">counts scaled by total number of reads</td>
+<td style="text-align: center;">sequencing depth</td>
+<td style="text-align: center;">gene count comparisons between replicates of the same sample group; <strong>NOT for within sample comparisons or DE analysis</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>TPM</strong> (transcripts per kilobase million)</td>
+<td style="text-align: center;">counts per length of transcript (kb) per million reads mapped</td>
+<td style="text-align: center;">sequencing depth and gene length</td>
+<td style="text-align: center;">gene count comparisons within a sample or between samples of the same sample group; <strong>NOT for DE analysis</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong>RPKM/FPKM</strong> (reads/fragments per kilobase of exon per million reads/fragments mapped)</td>
+<td style="text-align: center;">similar to TPM</td>
+<td style="text-align: center;">sequencing depth and gene length</td>
+<td style="text-align: center;">gene count comparisons between genes within a sample; <strong>NOT for between sample comparisons or DE analysis</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">DESeq2’s <strong>median of ratios</strong> [<a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106">1</a>]</td>
+<td style="text-align: center;">counts divided by sample-specific size factors determined by median ratio of gene counts relative to geometric mean per gene</td>
+<td style="text-align: center;">sequencing depth and RNA composition</td>
+<td style="text-align: center;">gene count comparisons between samples and for <strong>DE analysis</strong>; <strong>NOT for within sample comparisons</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">EdgeR’s <strong>trimmed mean of M values (TMM)</strong> [<a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25">2</a>]</td>
+<td style="text-align: center;">uses a weighted trimmed mean of the log expression ratios between samples</td>
+<td style="text-align: center;">sequencing depth and RNA composition</td>
+<td style="text-align: center;">gene count comparisons between samples and for <strong>DE analysis</strong>; <strong>NOT for within sample comparisons</strong></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="rpkmfpkm-not-recommended-for-between-sample-comparisons" class="level3">
+<h3 class="anchored" data-anchor-id="rpkmfpkm-not-recommended-for-between-sample-comparisons">RPKM/FPKM: not recommended for between sample comparisons</h3>
+<p>While TPM and RPKM/FPKM normalization methods both account for sequencing depth and gene length, RPKM/FPKM are not recommended. <strong>The reason is that the normalized count values output by the RPKM/FPKM method are not comparable between samples.</strong></p>
+<p>Using RPKM/FPKM normalization, the total number of RPKM/FPKM normalized counts for each sample will be different. Therefore, you cannot compare the normalized counts for each gene equally between samples.</p>
+<p><strong>RPKM-normalized counts table</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">gene</th>
+<th style="text-align: center;">sampleA</th>
+<th style="text-align: center;">sampleB</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">XCR1</td>
+<td style="text-align: center;">5.5</td>
+<td style="text-align: center;">5.5</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">WASHC1</td>
+<td style="text-align: center;">73.4</td>
+<td style="text-align: center;">21.8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">Total RPKM-normalized counts</td>
+<td style="text-align: center;">1,000,000</td>
+<td style="text-align: center;">1,500,000</td>
+</tr>
+</tbody>
+</table>
+<p>For example, in the table above, sampleA has a greater proportion of counts associated with XCR1 (5.5/1,000,000) than sampleB (5.5/1,500,000), even though the RPKM count values are the same. Therefore, we cannot directly compare the counts for XCR1 (or any other gene) between sampleA and sampleB, because the total number of normalized counts are different between samples.</p>
+<blockquote class="blockquote">
+<p><em>NOTE:</em> <a href="http://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/">This video by StatQuest</a> shows in more detail why TPM should be used in place of RPKM/FPKM if needing to normalize for sequencing depth and gene length.</p>
+</blockquote>
+</section>
+<section id="deseq2-normalized-counts-median-of-ratios-method" class="level3">
+<h3 class="anchored" data-anchor-id="deseq2-normalized-counts-median-of-ratios-method">DESeq2-normalized counts: Median of ratios method</h3>
+<p>Since tools for differential expression analysis are comparing the counts of the same gene between sample groups, gene length does not need to be accounted for by the tool. However, <strong>sequencing depth</strong> and <strong>RNA composition</strong> do need to be taken into account.</p>
+<p>To normalize for sequencing depth and RNA composition, DESeq2 uses the median of ratios method. On the user-end there is only one step, but on the back-end there are multiple steps involved, as described below.</p>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> The steps below describe in detail some of the steps performed by DESeq2 when you run a single function to get DE genes. Basically, for a typical RNA-seq analysis, <strong>you would not run these steps individually</strong>.</p>
+</blockquote>
+<p><strong>Step 1: creates a pseudo-reference sample (row-wise geometric mean)</strong></p>
+<p>For each gene, a pseudo-reference sample is created that is equal to the geometric mean across all samples.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">gene</th>
+<th style="text-align: center;">sampleA</th>
+<th style="text-align: center;">sampleB</th>
+<th style="text-align: center;">pseudo-reference sample</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">EF2A</td>
+<td style="text-align: center;">1489</td>
+<td style="text-align: center;">906</td>
+<td style="text-align: center;">sqrt(1489 * 906) = <strong>1161.5</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">ABCD1</td>
+<td style="text-align: center;">22</td>
+<td style="text-align: center;">13</td>
+<td style="text-align: center;">sqrt(22 * 13) = <strong>17.7</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2: calculates ratio of each sample to the reference</strong></p>
+<p>For every gene in every sample, the ratios (sample/ref) are calculated (as shown below). Since the majority of genes are not differentially expressed, the majority of genes in each sample should have similar ratios within the sample.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">gene</th>
+<th style="text-align: center;">sampleA</th>
+<th style="text-align: center;">sampleB</th>
+<th style="text-align: center;">pseudo-reference sample</th>
+<th style="text-align: center;">ratio of sampleA/ref</th>
+<th style="text-align: center;">ratio of sampleB/ref</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">EF2A</td>
+<td style="text-align: center;">1489</td>
+<td style="text-align: center;">906</td>
+<td style="text-align: center;">1161.5</td>
+<td style="text-align: center;">1489/1161.5 = <strong>1.28</strong></td>
+<td style="text-align: center;">906/1161.5 = <strong>0.78</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">ABCD1</td>
+<td style="text-align: center;">22</td>
+<td style="text-align: center;">13</td>
+<td style="text-align: center;">16.9</td>
+<td style="text-align: center;">22/16.9 = <strong>1.30</strong></td>
+<td style="text-align: center;">13/16.9 = <strong>0.77</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">MEFV</td>
+<td style="text-align: center;">793</td>
+<td style="text-align: center;">410</td>
+<td style="text-align: center;">570.2</td>
+<td style="text-align: center;">793/570.2 = <strong>1.39</strong></td>
+<td style="text-align: center;">410/570.2 = <strong>0.72</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">BAG1</td>
+<td style="text-align: center;">76</td>
+<td style="text-align: center;">42</td>
+<td style="text-align: center;">56.5</td>
+<td style="text-align: center;">76/56.5 = <strong>1.35</strong></td>
+<td style="text-align: center;">42/56.5 = <strong>0.74</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">MOV10</td>
+<td style="text-align: center;">521</td>
+<td style="text-align: center;">1196</td>
+<td style="text-align: center;">883.7</td>
+<td style="text-align: center;">521/883.7 = <strong>0.590</strong></td>
+<td style="text-align: center;">1196/883.7 = <strong>1.35</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3: calculate the normalization factor for each sample (size factor)</strong></p>
+<p>The median value (column-wise for the above table) of all ratios for a given sample is taken as the normalization factor (size factor) for that sample, as calculated below. Notice that the differentially expressed genes should not affect the median value:</p>
+<p><code>normalization_factor_sampleA &lt;- median(c(1.28, 1.3, 1.39, 1.35, 0.59))</code></p>
+<p><code>normalization_factor_sampleB &lt;- median(c(0.78, 0.77, 0.72, 0.74, 1.35))</code></p>
+<p>The figure below illustrates the median value for the distribution of all gene ratios for a single sample (y-axis is the frequency).</p>
+<p><img src="../img/deseq_median_of_ratios.png" width="400"></p>
+<p>The median of ratios method makes the assumption that not ALL genes are differentially expressed; therefore, the normalization factors should account for sequencing depth and RNA composition of the sample (large outlier genes will not affect the median ratio values). <strong>This method is robust to imbalance in up-/down-regulation and large numbers of differentially expressed genes.</strong></p>
+<blockquote class="blockquote">
+<p>Usually these size factors are around 1. If you see large variations between samples, it is important to take note as it might indicate the presence of extreme outliers.</p>
+</blockquote>
+<p><strong>Step 4: calculate the normalized count values using the normalization factor</strong></p>
+<p>This is performed by dividing each raw count value in a given sample by that sample’s normalization factor, generating normalized count values. This is performed for all count values (every gene in every sample). For example, if the median ratio for sampleA was 1.3 and the median ratio for sampleB was 0.77, you could calculate normalized counts as follows:</p>
+<p><strong>Raw Counts</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">gene</th>
+<th style="text-align: center;">sampleA</th>
+<th style="text-align: center;">sampleB</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">EF2A</td>
+<td style="text-align: center;">1489</td>
+<td style="text-align: center;">906</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">ABCD1</td>
+<td style="text-align: center;">22</td>
+<td style="text-align: center;">13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Normalized Counts</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">gene</th>
+<th style="text-align: center;">sampleA</th>
+<th style="text-align: center;">sampleB</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">EF2A</td>
+<td style="text-align: center;">1489 / 1.3 = <strong>1145.39</strong></td>
+<td style="text-align: center;">906 / 0.77 = <strong>1176.62</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">ABCD1</td>
+<td style="text-align: center;">22 / 1.3 = <strong>16.92</strong></td>
+<td style="text-align: center;">13 / 0.77 = <strong>16.88</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>Please note that normalized count values are not whole numbers.</p>
+</blockquote>
+<hr>
+</section>
+</section>
+<section id="count-normalization-of-mov10-dataset-using-deseq2" class="level2">
+<h2 class="anchored" data-anchor-id="count-normalization-of-mov10-dataset-using-deseq2">Count normalization of Mov10 dataset using DESeq2</h2>
+<p>Now that we know the theory of count normalization, we will normalize the counts for the Mov10 dataset using DESeq2. This requires a few steps:</p>
+<ol type="1">
+<li>Ensure that the row names of the metadata dataframe are present and are in the same order as the column names of the counts dataframe.</li>
+<li>Create a <code>DESeqDataSet</code> object</li>
+<li>Generate the normalized counts</li>
+</ol>
+<section id="match-the-metadata-and-counts-data" class="level3">
+<h3 class="anchored" data-anchor-id="match-the-metadata-and-counts-data">1. Match the metadata and counts data</h3>
+<p>We should always make sure that we have sample names that match between the two files, and that the samples are in the same order. DESeq2 will output an error if this is not the case.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load the libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DEGreport)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># read in the data form the previous process</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../out/object/txi.rds"</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../out/object/metadata.rds"</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(txi<span class="sc">$</span>counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" "Mov10_kd_3"
+[6] "Mov10_oe_1" "Mov10_oe_2" "Mov10_oe_3"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(meta)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" "Mov10_kd_3"
+[6] "Mov10_oe_1" "Mov10_oe_2" "Mov10_oe_3"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># are all the sample in the count table alo in the meatdata</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(txi<span class="sc">$</span>counts) <span class="sc">%in%</span> <span class="fu">rownames</span>(meta))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># are the sample in the table and in the metadata with the same orider?</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(txi<span class="sc">$</span>counts) <span class="sc">==</span> <span class="fu">rownames</span>(meta))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<p>If your data does not match, you could use the <code>match()</code> function to rearrange them.</p>
+<hr>
+<p><strong>Exercise</strong></p>
+<p>Suppose we have sample names matching in the counts matrix and metadata file, but they are in different order. Write the line(s) of code to create a new matrix with columns re-ordered such that they are identical to the row names of the metadata.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># simulate the scrambling</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> txi<span class="sc">$</span>counts[,<span class="fu">sample</span>(<span class="fu">colnames</span>(txi<span class="sc">$</span>counts))]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># confirm the scrambling is happening</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(test) <span class="sc">%in%</span> <span class="fu">rownames</span>(meta))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(test) <span class="sc">==</span> <span class="fu">rownames</span>(meta))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># rearrange the sample in the count matrix to match the order in the metadata</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>test_fix <span class="ot">&lt;-</span> test[,<span class="fu">rownames</span>(meta)]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># confirm the scrambling is fixed</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(test_fix) <span class="sc">%in%</span> <span class="fu">rownames</span>(meta))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">colnames</span>(test_fix) <span class="sc">==</span> <span class="fu">rownames</span>(meta))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<p>Here the solution provided</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>idx <span class="ot">&lt;-</span> <span class="fu">match</span>(<span class="fu">rownames</span>(meta), <span class="fu">colnames</span>(test))</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>idx</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8 2 5 4 7 3 6 1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>data_reordered <span class="ot">&lt;-</span> test[, idx]</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="do">## OR</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>data_reordered <span class="ot">&lt;-</span> test[, <span class="fu">match</span>(<span class="fu">rownames</span>(meta), <span class="fu">colnames</span>(test))]</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="do">## OR</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>txi<span class="sc">$</span>counts <span class="ot">&lt;-</span> txi<span class="sc">$</span>counts[, <span class="fu">match</span>(<span class="fu">rownames</span>(meta), <span class="fu">colnames</span>(txi<span class="sc">$</span>counts))]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<hr>
+</section>
+<section id="create-deseq2-object" class="level3">
+<h3 class="anchored" data-anchor-id="create-deseq2-object">2. Create DESEq2 object</h3>
+<p>Bioconductor software packages often define and use a custom class within R for storing data (input data, intermediate data and also results). These custom data structures are similar to <code>lists</code> in that they can contain multiple different data types/structures. But unlike lists, they have pre-specified <strong>data slots</strong>, which hold specific types/classes of data. The data stored in these pre-specified slots can be accessed by using specific package-defined functions.</p>
+<p>Let’s start by creating the <code>DESeqDataSet</code> object, and then we can talk a bit more about what is stored inside it. To create the object, we will need the <strong>count matrix</strong> and the <strong>metadata</strong> table as input. We will also need to specify a <strong>design formula</strong>. The design formula specifies the column(s) in the metadata table and how they should be used in the analysis. For our dataset we only have one column we are interested in, which is <code>~sampletype</code>. This column has three factor levels, which tells DESeq2 that for each gene we want to evaluate gene expression change with respect to these different levels.</p>
+<p><strong>Our count matrix input is stored in the <code>txi</code> list object</strong>. So we need to specify that using the <code>DESeqDataSetFromTximport()</code> function, which will extract the counts component and round the values to the nearest whole number.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># confirm the structure of the txi obejct</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>List of 4
+ $ abundance          : num [1:57761, 1:8] 63.78 0.69 47.79 4.31 17.55 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:57761] "ENSG00000000003" "ENSG00000000005" "ENSG00000000419" "ENSG00000000457" ...
+  .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
+ $ counts             : num [1:57761, 1:8] 4375.8 27.3 1478.2 507.9 1393.7 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:57761] "ENSG00000000003" "ENSG00000000005" "ENSG00000000419" "ENSG00000000457" ...
+  .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
+ $ length             : num [1:57761, 1:8] 1805 1090 809 2974 2020 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:57761] "ENSG00000000003" "ENSG00000000005" "ENSG00000000419" "ENSG00000000457" ...
+  .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
+ $ countsFromAbundance: chr "lengthScaledTPM"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Create DESeq2Dataset object</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromTximport</span>(txi, <span class="at">colData =</span> meta, <span class="at">design =</span> <span class="sc">~</span> sampletype)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using just counts from tximport</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># now confirm that after loading, the data have effectively been rounded to integers</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>dds<span class="sc">@</span>assays<span class="sc">@</span>data<span class="sc">$</span>counts[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003       4376       3645       2968       6178       3688
+ENSG00000000005         27         29         23         37         13
+ENSG00000000419       1478       1288        884       2369       1340
+ENSG00000000457        508        405        357        934        571
+ENSG00000000460       1394       1164        850       2172       1217
+ENSG00000000938          1          1          0          2          0
+ENSG00000000971         22         18          7         16          2
+ENSG00000001036       3258       2599       1980       4600       2781
+ENSG00000001084       3001       2438       1967       4703       3021
+ENSG00000001167       3069       2415       1949       4609       2637
+                Mov10_oe_1 Mov10_oe_2 Mov10_oe_3
+ENSG00000000003       3343       3114       2079
+ENSG00000000005         25         38         22
+ENSG00000000419       1890       1766       1271
+ENSG00000000457        646        591        354
+ENSG00000000460       1183       1139        673
+ENSG00000000938          0          0          0
+ENSG00000000971          9         20          4
+ENSG00000001036       2938       3178       1664
+ENSG00000001084       2327       2415       1556
+ENSG00000001167       2634       2434       1371</code></pre>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> Since we had created a <code>data</code> variable in the last lesson which contains the counts, we could have also used that as input. However, in that case we would want to use the <code>DESeqDataSetFromMatrix()</code> function.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># read in the matrix of rounded counts generated from txi</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>raw_count <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../out/object/raw_count.rds"</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>raw_count[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003       4376       3645       2968       6178       3688
+ENSG00000000005         27         29         23         37         13
+ENSG00000000419       1478       1288        884       2369       1340
+ENSG00000000457        508        405        357        934        571
+ENSG00000000460       1394       1164        850       2172       1217
+ENSG00000000938          1          1          0          2          0
+ENSG00000000971         22         18          7         16          2
+ENSG00000001036       3258       2599       1980       4600       2781
+ENSG00000001084       3001       2438       1967       4703       3021
+ENSG00000001167       3069       2415       1949       4609       2637
+                Mov10_oe_1 Mov10_oe_2 Mov10_oe_3
+ENSG00000000003       3343       3114       2079
+ENSG00000000005         25         38         22
+ENSG00000000419       1890       1766       1271
+ENSG00000000457        646        591        354
+ENSG00000000460       1183       1139        673
+ENSG00000000938          0          0          0
+ENSG00000000971          9         20          4
+ENSG00000001036       2938       3178       1664
+ENSG00000001084       2327       2415       1556
+ENSG00000001167       2634       2434       1371</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generate the deseq2 object</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>dds_alt <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(raw_count, <span class="at">colData =</span> meta, <span class="at">design =</span> <span class="sc">~</span> sampletype)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>converting counts to integer mode</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># now confirm the identity of the matrix</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>dds_alt<span class="sc">@</span>assays<span class="sc">@</span>data<span class="sc">$</span>counts[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
+ENSG00000000003       4376       3645       2968       6178       3688
+ENSG00000000005         27         29         23         37         13
+ENSG00000000419       1478       1288        884       2369       1340
+ENSG00000000457        508        405        357        934        571
+ENSG00000000460       1394       1164        850       2172       1217
+ENSG00000000938          1          1          0          2          0
+ENSG00000000971         22         18          7         16          2
+ENSG00000001036       3258       2599       1980       4600       2781
+ENSG00000001084       3001       2438       1967       4703       3021
+ENSG00000001167       3069       2415       1949       4609       2637
+                Mov10_oe_1 Mov10_oe_2 Mov10_oe_3
+ENSG00000000003       3343       3114       2079
+ENSG00000000005         25         38         22
+ENSG00000000419       1890       1766       1271
+ENSG00000000457        646        591        354
+ENSG00000000460       1183       1139        673
+ENSG00000000938          0          0          0
+ENSG00000000971          9         20          4
+ENSG00000001036       2938       3178       1664
+ENSG00000001084       2327       2415       1556
+ENSG00000001167       2634       2434       1371</code></pre>
+</div>
+</div>
+<div id="fig-deseq1" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-deseq1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/deseq_obj1.png" class="img-fluid figure-img" width="300"></p>
+<figcaption>deseq1</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-deseq1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5
+</figcaption>
+</figure>
+</div>
+<p>You can use DESeq-specific functions to access the different slots and retrieve information. For example, suppose we want to retrieve the original count matrix, we would use <code>counts()</code> function (<em>Note: we nest it within the <code>View()</code> function so that we can view the result in the script editor rather than in the console</em>) :</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">View</span>(<span class="fu">counts</span>(dds))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As we go through the workflow, we will use relevant functions to check what information is stored inside our object.</p>
+</section>
+<section id="generate-the-mov10-normalized-counts" class="level3">
+<h3 class="anchored" data-anchor-id="generate-the-mov10-normalized-counts">3. Generate the Mov10 normalized counts</h3>
+<p>The next step is to normalize the count data in order to make fair gene comparisons between samples.</p>
+<div id="fig-salmon" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-salmon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/de_workflow_salmon_normalization.png" class="img-fluid figure-img" width="300"></p>
+<figcaption>salmon</figcaption>
+</figure>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-salmon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6
+</figcaption>
+</figure>
+</div>
+<p>To perform the <strong>median of ratios method</strong> of normalization, DESeq2 has a single <code>estimateSizeFactors()</code> function that will generate size factors. We will demonstrate this function in the example below, but <strong>in a typical RNA-seq analysis, this step is automatically performed by the <code>DESeq()</code> function</strong>, which we will discuss later.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">estimateSizeFactors</span>(dds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>By assigning the results back to the <code>dds</code> object, we are filling in the slots of the <code>DESeqDataSet</code> object with the appropriate information. We can take a look at the normalization factors of each sample using:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sizeFactors</span>(dds)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3 Mov10_oe_1 Mov10_oe_2 
+ 1.1150371  0.9606366  0.7493552  1.5634128  0.9359082  1.2257749  1.1406863 
+Mov10_oe_3 
+ 0.6541689 </code></pre>
+</div>
+</div>
+<p>Now, to retrieve the normalized counts matrix from <code>dds</code>, we use the <code>counts()</code> function and add the argument <code>normalized=TRUE</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>normalized_counts <span class="ot">&lt;-</span> <span class="fu">counts</span>(dds, <span class="at">normalized=</span><span class="cn">TRUE</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="co"># check the content of the table</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>normalized_counts[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  Irrel_kd_1  Irrel_kd_2  Irrel_kd_3  Mov10_kd_2  Mov10_kd_3
+ENSG00000000003 3924.5330149 3794.358909 3960.738638 3951.611614 3940.557586
+ENSG00000000005   24.2144404   30.188315   30.693055   23.666175   13.890252
+ENSG00000000419 1325.5164068 1340.777579 1179.680915 1515.274832 1431.764416
+ENSG00000000457  455.5902129  421.595434  476.409600  597.411015  610.102598
+ENSG00000000460 1250.1825920 1211.696508 1134.308572 1389.268441 1300.341264
+ENSG00000000938    0.8968311    1.040976    0.000000    1.279253    0.000000
+ENSG00000000971   19.7302848   18.737575    9.341365   10.234022    2.136962
+ENSG00000001036 2921.8758141 2705.497614 2642.271733 2942.281228 2971.445403
+ENSG00000001084 2691.3902143 2537.900417 2624.923484 3008.162742 3227.880821
+ENSG00000001167 2752.3747310 2513.957960 2600.902832 2948.037865 2817.584152
+                 Mov10_oe_1 Mov10_oe_2  Mov10_oe_3
+ENSG00000000003 2727.254443 2729.93541 3178.078204
+ENSG00000000005   20.395262   33.31328   33.630457
+ENSG00000000419 1541.881812 1548.19073 1942.923231
+ENSG00000000457  527.013572  518.10913  541.144629
+ENSG00000000460  965.103801  998.52166 1028.786259
+ENSG00000000938    0.000000    0.00000    0.000000
+ENSG00000000971    7.342294   17.53330    6.114629
+ENSG00000001036 2396.851197 2786.04199 2543.685489
+ENSG00000001084 1898.390993 2117.14644 2378.590517
+ENSG00000001167 2148.844811 2133.80308 2095.788946</code></pre>
+</div>
+</div>
+<p>We can save this normalized data matrix to file for later use:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(normalized_counts, <span class="at">file=</span><span class="st">"../../out/table/normalized_counts.txt"</span>, <span class="at">sep=</span><span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, <span class="at">quote=</span>F, <span class="at">col.names=</span><span class="cn">NA</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> DESeq2 doesn’t actually use normalized counts, rather it uses the raw counts and models the normalization inside the Generalized Linear Model (GLM). These normalized counts will be useful for downstream visualization of results, but cannot be used as input to DESeq2 or any other tools that perform differential expression analysis that use the negative binomial model.</p>
+</blockquote>
+<p>Save the object for the next steps</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(dds,<span class="st">"../../out/object/dds.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
