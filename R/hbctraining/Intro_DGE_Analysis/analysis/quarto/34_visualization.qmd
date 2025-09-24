@@ -1,5 +1,5 @@
 ---
-title: "Summarizing results from the Wald test"
+title: "Advanced visualizations"
 html:
     embed-resources: true
 editor: visual
