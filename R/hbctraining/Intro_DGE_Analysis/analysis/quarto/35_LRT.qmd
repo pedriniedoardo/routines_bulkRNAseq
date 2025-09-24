@@ -22,7 +22,37 @@ Generally, this test will result in a larger number of genes than the individual
 
 To extract the results from our `dds_lrt` object we can use the same `results()` function we had used with the Wald test. _There is no need for contrasts since we are not making a pair-wise comparison._
 
-> **NOTE:** In an [earlier lesson](05a_hypothesis_testing.md#likelihood-ratio-test-lrt) on hypothesis testing, we had you create the object `dds_lrt`. If you are **having trouble finding the object**, please run the code: `dds_lrt <- DESeq(dds, test="LRT", reduced = ~ 1`
+> **NOTE:** In an [earlier lesson](05a_hypothesis_testing.md#likelihood-ratio-test-lrt) on hypothesis testing, we had you create the object `dds_lrt`. If you are **having trouble finding the object**, please run the code: `dds_lrt <- DESeq(dds, test="LRT", reduced = ~ 1)`
+
+```{r}
+#| warning: false
+#| message: false
+
+# load the libraries
+library(DESeq2)
+library(tidyverse)
+library(RColorBrewer)
+library(pheatmap)
+library(tximport)
+library(ggplot2)
+library(ggrepel)
+library(limma)
+library(ashr)
+library(ComplexUpset)
+library(UpSetR)
+library(ComplexHeatmap)
+library(DEGreport)
+```
+
+```{r}
+# read in the data
+dds <- readRDS("../../out/object/dds.rds")
+
+# Likelihood ratio test
+dds_lrt <- DESeq(dds, test="LRT", reduced = ~ 1)
+
+```
+
 
 ```r
 # Extract results for LRT

@@ -47,7 +47,20 @@ library(DEGreport)
 ```{r}
 # read in the data
 meta <- readRDS("../../out/object/metadata.rds")
-dds <- readRDS("../../out/object/dds.rds")
+
+# read in the object
+txi <- readRDS("../../out/object/txi.rds")
+meta <- readRDS("../../out/object/metadata.rds")
+
+## Create DESeq2Dataset object
+dds <- DESeqDataSetFromTximport(txi, colData = meta, design = ~ sampletype)
+dds
+
+## Run analysis
+dds <- DESeq(dds)
+
+# save the dds after runnign DESeq()
+saveRDS(dds,"../../out/object/dds_full.rds")
 
 # res_tableOE <- readRDS("../../out/object/res_tableOE_shrAlt.rds")
 res_tableOE <- readRDS("../../out/object/res_tableOE.rds")
