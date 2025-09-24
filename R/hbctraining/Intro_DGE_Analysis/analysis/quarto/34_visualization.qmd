@@ -46,7 +46,7 @@ library(DEGreport)
 
 ```{r}
 # read in the data
-meta <- readRDS("../../out/object/metadata.rds")
+# meta <- readRDS("../../out/object/metadata.rds")
 
 # read in the object
 txi <- readRDS("../../out/object/txi.rds")
