@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Genomic annotations</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="41_GenomicAnnotation_files/libs/clipboard/clipboard.min.js"></script>
+<script src="41_GenomicAnnotation_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="41_GenomicAnnotation_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="41_GenomicAnnotation_files/libs/quarto-html/popper.min.js"></script>
+<script src="41_GenomicAnnotation_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="41_GenomicAnnotation_files/libs/quarto-html/anchor.min.js"></script>
+<link href="41_GenomicAnnotation_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="41_GenomicAnnotation_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="41_GenomicAnnotation_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="41_GenomicAnnotation_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="41_GenomicAnnotation_files/libs/bootstrap/bootstrap-05cc275de2cb3139844e2d4d6308aaf1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Genomic annotations</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="learning-objectives" class="level2">
+<h2 class="anchored" data-anchor-id="learning-objectives">Learning Objectives:</h2>
+<ul>
+<li>Discuss the available genomic annotation databases and the different types if information stored</li>
+<li>Compare and contrast the tools available for accessing genomic annotation databases</li>
+<li>Apply various R packages for retrieval of genomic annotations</li>
+</ul>
+</section>
+<section id="genomic-annotations" class="level1">
+<h1>Genomic annotations</h1>
+<p>The analysis of next-generation sequencing results requires associating genes, transcripts, proteins, etc. with functional or regulatory information. To perform functional analysis on gene lists, we often need to obtain gene identifiers that are compatible with the tools we wish to use and this is not always trivial. Here, we discuss <strong>ways in which you can obtain gene annotation information and some of the advantages and disadvantages of each method</strong>.</p>
+<section id="databases" class="level2">
+<h2 class="anchored" data-anchor-id="databases">Databases</h2>
+<p>We retrieve information on the processes, pathways, etc. (for which a gene is involved in) from the necessary database where the information is stored. The database you choose will be dependent on what type of information you are trying to obtain. Examples of databases that are often queried, include:</p>
+<p><strong>General databases</strong></p>
+<p>Offer comprehensive information on genome features, feature coordinates, homology, variant information, phenotypes, protein domain/family information, associated biological processes/pathways, associated microRNAs, etc.:</p>
+<ul>
+<li><strong>Ensembl</strong> (use Ensembl gene IDs)</li>
+<li><strong>NCBI</strong> (use Entrez gene IDs)</li>
+<li><strong>UCSC</strong></li>
+<li><strong>EMBL-EBI</strong></li>
+</ul>
+<p><strong>Annotation-specific databases</strong></p>
+<p>Provide annotations related to a specific topic:</p>
+<ul>
+<li><strong>Gene Ontology (GO):</strong> database of gene ontology biological processes, cellular components and molecular functions - based on Ensembl or Entrez gene IDs or official gene symbols</li>
+<li><strong>KEGG:</strong> database of biological pathways - based on Entrez gene IDs</li>
+<li><strong>MSigDB:</strong> database of gene sets</li>
+<li><strong>Reactome:</strong> database of biological pathways</li>
+<li><strong>Human Phenotype Ontology:</strong> database of genes associated with human disease</li>
+<li><strong>CORUM:</strong> database of protein complexes for human, mouse, rat</li>
+<li><strong>…</strong></li>
+</ul>
+<p>This is by no means an exhaustive list, there are many other databases available that are not listed here.</p>
+</section>
+<section id="genome-builds" class="level2">
+<h2 class="anchored" data-anchor-id="genome-builds">Genome builds</h2>
+<p>Before you begin your search through any of these databases, you should know which <strong>build of the genome</strong> was used to generate your gene list and make sure you use the <strong>same build for the annotations</strong> during functional analysis. When a new genome build is acquired, the names and/or coordinate location of genomic features (gene, transcript, exon, etc.) may change. Therefore, the annotations regarding genome features (gene, transcript, exon, etc.) is genome-build specific and we need to make sure that our annotations are obtained from the appropriate resource.</p>
+<p>For example, if we used the GRCh38 build of the human genome to quantify gene expression used for differential expression analysis, then we should use the <strong>same GRCh38 build</strong> of the genome to convert between gene IDs and to identify annotations for each of the genes.</p>
+</section>
+<section id="tools-for-accessing-databases" class="level2">
+<h2 class="anchored" data-anchor-id="tools-for-accessing-databases">Tools for accessing databases</h2>
+<p>Within R, there are many popular packages used for gene/transcript-level annotation. These packages provide tools that take the list of genes you provide and retrieve information for each gene using one or more of the databases listed above.</p>
+<section id="annotation-tools-for-accessingquerying-annotations-from-a-specific-databases" class="level3">
+<h3 class="anchored" data-anchor-id="annotation-tools-for-accessingquerying-annotations-from-a-specific-databases">Annotation tools: for accessing/querying annotations from a specific databases</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">Tool</th>
+<th style="text-align: left;">Description</th>
+<th style="text-align: left;">Pros</th>
+<th style="text-align: center;">Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong><a href="https://bioconductor.org/packages/release/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf">org.Xx.eg.db</a></strong></td>
+<td style="text-align: left;">Query gene feature information for the organism of interest</td>
+<td style="text-align: left;">gene ID conversion, biotype and coordinate information</td>
+<td style="text-align: center;">only latest genome build available</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong><a href="http://bioconductor.org/packages/devel/bioc/vignettes/ensembldb/inst/doc/ensembldb.html">EnsDb.Xx.vxx</a></strong></td>
+<td style="text-align: left;">Transcript and gene-level information directly fetched from Ensembl API (similar to TxDb, but with filtering ability and versioned by Ensembl release)</td>
+<td style="text-align: left;">easy functions to extract features, direct filtering</td>
+<td style="text-align: center;">Not the most up-to-date annotations, more difficult to use than some packages</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong><a href="https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html">TxDb.Xx.UCSC.hgxx.knownGene</a></strong></td>
+<td style="text-align: left;">UCSC database for transcript and gene-level information or can create own <em>TxDb</em> from an SQLite database file using the <em>GenomicFeatures</em> package</td>
+<td style="text-align: left;">feature information, easy functions to extract features</td>
+<td style="text-align: center;">only available current and recent genome builds - can create your own, less up-to-date with annotations than Ensembl</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong><a href="https://github.com/stephenturner/annotables">annotables</a></strong></td>
+<td style="text-align: left;">Gene-level feature information immediately available for the human and model organisms</td>
+<td style="text-align: left;">super quick and easy gene ID conversion, biotype and coordinate information</td>
+<td style="text-align: center;">static resource, not updated regularly</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong><a href="https://bioconductor.org/packages/release/bioc/html/biomaRt.html">biomaRt</a></strong></td>
+<td style="text-align: left;">An R package version of the Ensembl <a href="http://www.ensembl.org/biomart/martview/70dbbbe3f1c5389418b5ea1e02d89af3">BioMart online tool</a></td>
+<td style="text-align: left;">all Ensembl database information available, all organisms on Ensembl, wealth of information</td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="interface-tools-for-accessingquerying-annotations-from-multiple-different-annotation-sources" class="level3">
+<h3 class="anchored" data-anchor-id="interface-tools-for-accessingquerying-annotations-from-multiple-different-annotation-sources">Interface tools: for accessing/querying annotations from multiple different annotation sources</h3>
+<ul>
+<li><strong>AnnotationDbi:</strong> queries the <em>OrgDb</em>, <em>TxDb</em>, <em>Go.db</em>, <em>EnsDb</em>, and <em>BioMart</em> annotations.<br>
+</li>
+<li><strong>AnnotationHub:</strong> queries large collection of whole genome resources, including ENSEMBL, UCSC, ENCODE, Broad Institute, KEGG, NIH Pathway Interaction Database, etc.</li>
+</ul>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> These are both packages that can be used to create the <code>tx2gene</code> files we had you download at the beginning of this workshop.</p>
+</blockquote>
+</section>
+</section>
+<section id="annotationdbi" class="level2">
+<h2 class="anchored" data-anchor-id="annotationdbi">AnnotationDbi</h2>
+<p>AnnotationDbi is an R package that provides an interface for connecting and querying various annotation databases using SQLite data storage. The AnnotationDbi packages can query the <em>OrgDb</em>, <em>TxDb</em>, <em>EnsDb</em>, <em>Go.db</em>, and <em>BioMart</em> annotations. There is helpful <a href="https://bioconductor.org/packages/release/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf">documentation</a> available to reference when extracting data from any of these databases.</p>
+<section id="org.hs.eg.db" class="level3">
+<h3 class="anchored" data-anchor-id="org.hs.eg.db">org.Hs.eg.db</h3>
+<p>There are a plethora of organism-specific <em>orgDb</em> packages, such as <code>org.Hs.eg.db</code> for human and <code>org.Mm.eg.db</code> for mouse, and a list of organism databases can be found <a href="https://www.bioconductor.org/packages/release/BiocViews.html#___OrgDb">here</a>. These databases are best for converting gene IDs or obtaining GO information for current genome builds, but not for older genome builds. These packages provide the current builds corresponding to the release date of the package, and update every 6 months. If a package is not available for your organism of interest, you can create your own using <em>AnnotationHub</em>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: AnnotationDbi</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: stats4</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: BiocGenerics</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'BiocGenerics'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
+    match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+    Position, rank, rbind, Reduce, rownames, sapply, saveRDS, setdiff,
+    table, tapply, union, unique, unsplit, which.max, which.min</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: Biobase</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: IRanges</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: S4Vectors</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'S4Vectors'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:utils':
+
+    findMatches</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    expand.grid, I, unname</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(AnnotationDbi)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Check object metadata</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>org.Hs.eg.db</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OrgDb object:
+| DBSCHEMAVERSION: 2.1
+| Db type: OrgDb
+| Supporting package: AnnotationDbi
+| DBSCHEMA: HUMAN_DB
+| ORGANISM: Homo sapiens
+| SPECIES: Human
+| EGSOURCEDATE: 2024-Sep20
+| EGSOURCENAME: Entrez Gene
+| EGSOURCEURL: ftp://ftp.ncbi.nlm.nih.gov/gene/DATA
+| CENTRALID: EG
+| TAXID: 9606
+| GOSOURCENAME: 
+| GOSOURCEURL: 
+| GOSOURCEDATE: 
+| GOEGSOURCEDATE: 2024-Sep20
+| GOEGSOURCENAME: Entrez Gene
+| GOEGSOURCEURL: ftp://ftp.ncbi.nlm.nih.gov/gene/DATA
+| KEGGSOURCENAME: KEGG GENOME
+| KEGGSOURCEURL: ftp://ftp.genome.jp/pub/kegg/genomes
+| KEGGSOURCEDATE: 2011-Mar15
+| GPSOURCENAME: UCSC Genome Bioinformatics (Homo sapiens)
+| GPSOURCEURL: ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/database
+| GPSOURCEDATE: 2024-Sep22
+| ENSOURCEDATE: 2024-May14
+| ENSOURCENAME: Ensembl
+| ENSOURCEURL: ftp://ftp.ensembl.org/pub/current_fasta
+| UPSOURCENAME: Uniprot
+| UPSOURCEURL: http://www.UniProt.org/
+| UPSOURCEDATE: Mon Sep 23 15:46:45 2024</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Please see: help('select') for usage information</code></pre>
+</div>
+</div>
+<p>We can see the metadata for the database by just typing the name of the database, including the species, last updates for the different source information, and the source urls. Note the KEGG data from this database was last updated in 2011, so may not be the best site for KEGG pathway information.</p>
+<p>We can easily extract information from this database using <em>AnnotationDbi</em> with the methods: <code>columns</code>, <code>keys</code>, <code>keytypes</code>, and <code>select</code>. For example, we will use our <code>org.Hs.eg.db</code> database to acquire information, but know that the same methods work for the <em>TxDb</em>, <em>Go.db</em>, <em>EnsDb</em>, and <em>BioMart</em> annotations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load the libraries</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(limma)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ashr)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ComplexUpset)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(UpSetR)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ComplexHeatmap)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DEGreport)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># read in the pairwise DE analysis</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>res_tableOE_tb <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../../out/object/res_tableOE.rds"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="st">"gene"</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(res_tableOE_tb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 57761     7</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Return the Ensembl IDs for a set of genes</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>annotations_orgDb <span class="ot">&lt;-</span> AnnotationDbi<span class="sc">::</span><span class="fu">select</span>(org.Hs.eg.db, <span class="co"># database</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">keys =</span> res_tableOE_tb<span class="sc">$</span>gene,  <span class="co"># data to use for retrieval</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">columns =</span> <span class="fu">c</span>(<span class="st">"SYMBOL"</span>, <span class="st">"ENTREZID"</span>,<span class="st">"GENENAME"</span>), <span class="co"># information to retreive for given data</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">keytype =</span> <span class="st">"ENSEMBL"</span>) <span class="co"># type of data given in 'keys' argument</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations_orgDb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 58681     4</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_orgDb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          ENSEMBL SYMBOL ENTREZID
+1 ENSG00000000003 TSPAN6     7105
+2 ENSG00000000005   TNMD    64102
+3 ENSG00000000419   DPM1     8813
+4 ENSG00000000457  SCYL3    57147
+5 ENSG00000000460  FIRRM    55732
+6 ENSG00000000938    FGR     2268
+                                                     GENENAME
+1                                               tetraspanin 6
+2                                                 tenomodulin
+3 dolichyl-phosphate mannosyltransferase subunit 1, catalytic
+4                                    SCY1 like pseudokinase 3
+5   FIGNL1 interacting regulator of recombination and mitosis
+6              FGR proto-oncogene, Src family tyrosine kinase</code></pre>
+</div>
+</div>
+<p>We started from at about 57K genes in our results table, and the dimensions of our resulting annotation data frame also look quite similar. Let’s take a peek to see if we actually returned annotations for each individual Ensembl gene ID that went in to the query:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># length(which(is.na(annotations_orgDb$SYMBOL)))</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>annotations_orgDb <span class="sc">%&gt;%</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">missing =</span> <span class="fu">is.na</span>(SYMBOL)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(missing) <span class="sc">%&gt;%</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  missing     n
+  &lt;lgl&gt;   &lt;int&gt;
+1 FALSE   36556
+2 TRUE    22125</code></pre>
+</div>
+</div>
+<p>Looks like more than half of the input genes did not return any annotations. This is because the OrgDb family of database are primarily based on mapping using Entrez Gene identifiers. If you look at some of the Ensembl IDs from our query that returned NA, these map to pseudogenes (i.e <a href="https://useast.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000265439;r=6:44209766-44210063;t=ENST00000580735">ENSG00000265439</a>) or non-coding RNAs (i.e.&nbsp;<a href="http://useast.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000265425;r=18:68427030-68436918;t=ENST00000577835">ENSG00000265425</a>). The difference is due to the fact that each database implements different computational approaches for generating the gene builds. Let’s get rid of those NA entries:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Determine the indices for the non-NA genes</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="co"># non_na_idx &lt;- which(is.na(annotations_orgDb$SYMBOL) == FALSE)</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># # Return only the genes with annotations using indices</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="co"># annotations_orgDb &lt;- annotations_orgDb[non_na_idx, ]</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>annotations_orgDb2 <span class="ot">&lt;-</span> annotations_orgDb <span class="sc">%&gt;%</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(SYMBOL))</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_orgDb2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          ENSEMBL SYMBOL ENTREZID
+1 ENSG00000000003 TSPAN6     7105
+2 ENSG00000000005   TNMD    64102
+3 ENSG00000000419   DPM1     8813
+4 ENSG00000000457  SCYL3    57147
+5 ENSG00000000460  FIRRM    55732
+6 ENSG00000000938    FGR     2268
+                                                     GENENAME
+1                                               tetraspanin 6
+2                                                 tenomodulin
+3 dolichyl-phosphate mannosyltransferase subunit 1, catalytic
+4                                    SCY1 like pseudokinase 3
+5   FIGNL1 interacting regulator of recombination and mitosis
+6              FGR proto-oncogene, Src family tyrosine kinase</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations_orgDb2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 36556     4</code></pre>
+</div>
+</div>
+<p>You may have also noted the <em>warning</em> returned: <em>‘select()’ returned 1:many mapping between keys and columns</em>. This is always going to happen with converting between different gene IDs (i.e.&nbsp;one geneID can map to more than one identifier in another databse) . Unless we would like to keep multiple mappings for a single gene, then we probably want to de-duplicate our data before using it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Determine the indices for the non-duplicated genes</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="co"># non_duplicates_idx &lt;- which(duplicated(annotations_orgDb2$SYMBOL) == FALSE)</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># # Return only the non-duplicated genes using indices</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># annotations_orgDb3 &lt;- annotations_orgDb2[non_duplicates_idx, ]</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>annotations_orgDb3 <span class="ot">&lt;-</span> annotations_orgDb2 <span class="sc">%&gt;%</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">duplicated</span>(SYMBOL))</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_orgDb3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          ENSEMBL SYMBOL ENTREZID
+1 ENSG00000000003 TSPAN6     7105
+2 ENSG00000000005   TNMD    64102
+3 ENSG00000000419   DPM1     8813
+4 ENSG00000000457  SCYL3    57147
+5 ENSG00000000460  FIRRM    55732
+6 ENSG00000000938    FGR     2268
+                                                     GENENAME
+1                                               tetraspanin 6
+2                                                 tenomodulin
+3 dolichyl-phosphate mannosyltransferase subunit 1, catalytic
+4                                    SCY1 like pseudokinase 3
+5   FIGNL1 interacting regulator of recombination and mitosis
+6              FGR proto-oncogene, Src family tyrosine kinase</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations_orgDb3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 36287     4</code></pre>
+</div>
+</div>
+</section>
+<section id="ensdb.hsapiens.v86" class="level3">
+<h3 class="anchored" data-anchor-id="ensdb.hsapiens.v86">EnsDb.Hsapiens.v86</h3>
+<p>To generate the Ensembl annotations, the <em>EnsDb</em> database can also be easily queried using AnnotationDbi. You will need to decide the release of Ensembl you would like to query. We know that our data is for GRCh38, and the most current <em>EnsDb</em> release for GRCh38 in Bioconductor is release 86, so we can install this database. All Ensembl releases are listed <a href="http://useast.ensembl.org/info/website/archives/index.html">here</a>. <strong>NOTE: this is not the most current release of GRCh38 in the Ensembl database, but it’s as current as we can obtain through AnnotationDbi.</strong></p>
+<p>Since we are using <em>AnnotationDbi</em> to query the database, we can use the same functions that we used previously:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the library</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(EnsDb.Hsapiens.v86)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: ensembldb</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: GenomicFeatures</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: AnnotationFilter</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'ensembldb'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:dplyr':
+
+    filter</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:stats':
+
+    filter</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check object metadata</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>EnsDb.Hsapiens.v86</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>EnsDb for Ensembl:
+|Backend: SQLite
+|Db type: EnsDb
+|Type of Gene ID: Ensembl Gene ID
+|Supporting package: ensembldb
+|Db created by: ensembldb package from Bioconductor
+|script_version: 0.3.0
+|Creation time: Thu May 18 16:32:27 2017
+|ensembl_version: 86
+|ensembl_host: localhost
+|Organism: homo_sapiens
+|taxonomy_id: 9606
+|genome_build: GRCh38
+|DBSCHEMAVERSION: 2.0
+| No. of genes: 63970.
+| No. of transcripts: 216741.
+|Protein data available.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore the fields that can be used as keys</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">keytypes</span>(EnsDb.Hsapiens.v86)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "ENTREZID"            "EXONID"              "GENEBIOTYPE"        
+ [4] "GENEID"              "GENENAME"            "PROTDOMID"          
+ [7] "PROTEINDOMAINID"     "PROTEINDOMAINSOURCE" "PROTEINID"          
+[10] "SEQNAME"             "SEQSTRAND"           "SYMBOL"             
+[13] "TXBIOTYPE"           "TXID"                "TXNAME"             
+[16] "UNIPROTID"          </code></pre>
+</div>
+</div>
+<p>Now we can return all gene IDs for our gene list:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Return the Ensembl IDs for a set of genes</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>annotations_edb <span class="ot">&lt;-</span> AnnotationDbi<span class="sc">::</span><span class="fu">select</span>(EnsDb.Hsapiens.v86,</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">keys =</span> res_tableOE_tb<span class="sc">$</span>gene,</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">columns =</span> <span class="fu">c</span>(<span class="st">"SYMBOL"</span>, <span class="st">"ENTREZID"</span>,<span class="st">"GENEBIOTYPE"</span>),</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">keytype =</span> <span class="st">"GENEID"</span>)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_edb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           GENEID   SYMBOL ENTREZID    GENEBIOTYPE
+1 ENSG00000000003   TSPAN6     7105 protein_coding
+2 ENSG00000000005     TNMD    64102 protein_coding
+3 ENSG00000000419     DPM1     8813 protein_coding
+4 ENSG00000000457    SCYL3    57147 protein_coding
+5 ENSG00000000460 C1orf112    55732 protein_coding
+6 ENSG00000000938      FGR     2268 protein_coding</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations_edb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 57743     4</code></pre>
+</div>
+</div>
+<p>We can check for NA entries, and find that there are none:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># length(which(is.na(annotations_edb$SYMBOL) == FALSE))</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>annotations_edb <span class="sc">%&gt;%</span></span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">missing =</span> <span class="fu">is.na</span>(SYMBOL)) <span class="sc">%&gt;%</span></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(missing) <span class="sc">%&gt;%</span></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 2
+  missing     n
+  &lt;lgl&gt;   &lt;int&gt;
+1 FALSE   57743</code></pre>
+</div>
+</div>
+<p>Then we can again deduplicate, to remove the gene symbols which appear more than once:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Determine the indices for the non-duplicated genes</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co"># non_duplicates_idx &lt;- which(duplicated(annotations_edb$SYMBOL) == FALSE)</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="co"># # Return only the non-duplicated genes using indices</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="co"># annotations_edb2 &lt;- annotations_edb[non_duplicates_idx, ]</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>annotations_edb2 <span class="ot">&lt;-</span> annotations_edb <span class="sc">%&gt;%</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">duplicated</span>(SYMBOL))</span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_edb2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           GENEID   SYMBOL ENTREZID    GENEBIOTYPE
+1 ENSG00000000003   TSPAN6     7105 protein_coding
+2 ENSG00000000005     TNMD    64102 protein_coding
+3 ENSG00000000419     DPM1     8813 protein_coding
+4 ENSG00000000457    SCYL3    57147 protein_coding
+5 ENSG00000000460 C1orf112    55732 protein_coding
+6 ENSG00000000938      FGR     2268 protein_coding</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations_edb2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 55430     4</code></pre>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> In this case we used the same build but a slightly older release, and we found little discrepancy. If your analysis was conducted using an older genome build (i.e hg19), but used a newer build for annotation some genes may be found to be not annotated (NA). Some of the genes have changed names in between versions (due to updates and patches), so may not be present in the newer version of the database.</p>
+</blockquote>
+</section>
+</section>
+<section id="annotationhub" class="level2">
+<h2 class="anchored" data-anchor-id="annotationhub">AnnotationHub</h2>
+<p>AnnotationHub is a wonderful resource for accessing genomic data or querying large collection of whole genome resources, including ENSEMBL, UCSC, ENCODE, Broad Institute, KEGG, NIH Pathway Interaction Database, etc. All of this information is stored and easily accessible by directly connecting to the database.</p>
+<p>To get started with AnnotationHub, we first load the library and connect to the database:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load libraries</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(AnnotationHub)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: BiocFileCache</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: dbplyr</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dbplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:dplyr':
+
+    ident, sql</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'AnnotationHub'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:Biobase':
+
+    cache</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ensembldb)</span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to AnnotationHub</span></span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>ah <span class="ot">&lt;-</span> <span class="fu">AnnotationHub</span>()</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a><span class="fu">hubCache</span>(ah)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "/home/edo/.cache/R/AnnotationHub"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hubUrl</span>(ah)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "https://annotationhub.bioconductor.org"</code></pre>
+</div>
+</div>
+<blockquote class="blockquote">
+<h4 id="what-is-a-cache" class="anchored">What is a cache?</h4>
+<p>A cache is used in R to store data or a copy of the data so that future requests can be served faster without having to re-run a lengthy computation.</p>
+<p>The <code>AnnotationHub()</code> command creates a client that manages a local cache of the database, helping with quick and reproducible access. When encountering question <code>AnnotationHub does not exist, create directory?</code>, you can anwser either <code>yes</code> (create a permanent location to store cache) or <code>no</code> (create a temporary location to store cache). <code>hubCache(ah)</code> gets the file system location of the local AnnotationHub cache. <code>hubUrl(ah)</code> gets the URL for the online hub.</p>
+</blockquote>
+<p>To see the types of information stored inside our database, we can just type the name of the object:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore the AnnotationHub object</span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>ah</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>AnnotationHub with 72100 records
+# snapshotDate(): 2024-10-28
+# $dataprovider: Ensembl, BroadInstitute, UCSC, ftp://ftp.ncbi.nlm.nih.gov/g...
+# $species: Homo sapiens, Mus musculus, Drosophila melanogaster, Rattus norv...
+# $rdataclass: GRanges, TwoBitFile, BigWigFile, EnsDb, Rle, OrgDb, SQLiteFil...
+# additional mcols(): taxonomyid, genome, description,
+#   coordinate_1_based, maintainer, rdatadateadded, preparerclass, tags,
+#   rdatapath, sourceurl, sourcetype 
+# retrieve records with, e.g., 'object[["AH5012"]]' 
+
+             title                                             
+  AH5012   | Chromosome Band                                   
+  AH5013   | STS Markers                                       
+  AH5014   | FISH Clones                                       
+  AH5015   | Recomb Rate                                       
+  AH5016   | ENCODE Pilot                                      
+  ...        ...                                               
+  AH119506 | Ensembl 113 EnsDb for Zonotrichia albicollis      
+  AH119507 | Ensembl 113 EnsDb for Zalophus californianus      
+  AH119508 | Ensembl 113 EnsDb for Zosterops lateralis melanops
+  AH119518 | MassBank CompDb for release 2024.06               
+  AH119519 | MassBank CompDb for release 2024.11               </code></pre>
+</div>
+</div>
+<p>Using the output, you can get an idea of the information that you can query within the AnnotationHub object: Notice the note on retrieving records with <code>object[[AH*]]</code> - this will be how we can <strong>extract a single record</strong> from the AnnotationHub object.</p>
+<p>If you would like to see more information about any of the classes of data you can extract that information as well. For example, if you wanted to <strong>determine all species information available</strong>, you could explore that within the AnnotationHub object:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore all species information available</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(ah<span class="sc">$</span>species) <span class="sc">%&gt;%</span> <span class="fu">length</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2994</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(ah<span class="sc">$</span>species) <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Homo sapiens"         "Vicugna pacos"        "Dasypus novemcinctus"
+[4] "Otolemur garnettii"   "Papio hamadryas"      "Papio anubis"        </code></pre>
+</div>
+</div>
+<p>In addition to species information, there is also additional information about the type of Data Objects and the Data Providers:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore the types of Data Objects available</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(ah<span class="sc">$</span>rdataclass)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "GRanges"                           "data.frame"                       
+ [3] "Inparanoid8Db"                     "TwoBitFile"                       
+ [5] "ChainFile"                         "SQLiteConnection"                 
+ [7] "biopax"                            "BigWigFile"                       
+ [9] "AAStringSet"                       "MSnSet"                           
+[11] "mzRident"                          "list"                             
+[13] "TxDb"                              "Rle"                              
+[15] "EnsDb"                             "VcfFile"                          
+[17] "igraph"                            "data.frame, DNAStringSet, GRanges"
+[19] "sqlite"                            "data.table"                       
+[21] "character"                         "SQLite"                           
+[23] "SQLiteFile"                        "Tibble"                           
+[25] "Rda"                               "FaFile"                           
+[27] "String"                            "CompDb"                           
+[29] "OrgDb"                            </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore the Data Providers</span></span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(ah<span class="sc">$</span>dataprovider)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "UCSC"                                                                                                      
+ [2] "Ensembl"                                                                                                   
+ [3] "RefNet"                                                                                                    
+ [4] "Inparanoid8"                                                                                               
+ [5] "NHLBI"                                                                                                     
+ [6] "ChEA"                                                                                                      
+ [7] "Pazar"                                                                                                     
+ [8] "NIH Pathway Interaction Database"                                                                          
+ [9] "Haemcode"                                                                                                  
+[10] "BroadInstitute"                                                                                            
+[11] "PRIDE"                                                                                                     
+[12] "Gencode"                                                                                                   
+[13] "CRIBI"                                                                                                     
+[14] "Genoscope"                                                                                                 
+[15] "MISO, VAST-TOOLS, UCSC"                                                                                    
+[16] "Stanford"                                                                                                  
+[17] "dbSNP"                                                                                                     
+[18] "BioMart"                                                                                                   
+[19] "GeneOntology"                                                                                              
+[20] "KEGG"                                                                                                      
+[21] "URGI"                                                                                                      
+[22] "EMBL-EBI"                                                                                                  
+[23] "MicrosporidiaDB"                                                                                           
+[24] "FungiDB"                                                                                                   
+[25] "TriTrypDB"                                                                                                 
+[26] "ToxoDB"                                                                                                    
+[27] "AmoebaDB"                                                                                                  
+[28] "PlasmoDB"                                                                                                  
+[29] "PiroplasmaDB"                                                                                              
+[30] "CryptoDB"                                                                                                  
+[31] "TrichDB"                                                                                                   
+[32] "GiardiaDB"                                                                                                 
+[33] "The Gene Ontology Consortium"                                                                              
+[34] "ENCODE Project"                                                                                            
+[35] "SchistoDB"                                                                                                 
+[36] "NCBI/UniProt"                                                                                              
+[37] "GENCODE"                                                                                                   
+[38] "http://www.pantherdb.org"                                                                                  
+[39] "RMBase v2.0"                                                                                               
+[40] "snoRNAdb"                                                                                                  
+[41] "tRNAdb"                                                                                                    
+[42] "NCBI"                                                                                                      
+[43] "DrugAge, DrugBank, Broad Institute"                                                                        
+[44] "DrugAge"                                                                                                   
+[45] "DrugBank"                                                                                                  
+[46] "Broad Institute"                                                                                           
+[47] "HMDB, EMBL-EBI, EPA"                                                                                       
+[48] "STRING"                                                                                                    
+[49] "OMA"                                                                                                       
+[50] "OrthoDB"                                                                                                   
+[51] "PathBank"                                                                                                  
+[52] "EBI/EMBL"                                                                                                  
+[53] "NCBI,DBCLS"                                                                                                
+[54] "FANTOM5,DLRP,IUPHAR,HPRD,STRING,SWISSPROT,TREMBL,ENSEMBL,CELLPHONEDB,BADERLAB,SINGLECELLSIGNALR,HOMOLOGENE"
+[55] "WikiPathways"                                                                                              
+[56] "VAST-TOOLS"                                                                                                
+[57] "pyGenomeTracks "                                                                                           
+[58] "NA"                                                                                                        
+[59] "UoE"                                                                                                       
+[60] "TargetScan,miRTarBase,USCS,ENSEMBL"                                                                        
+[61] "TargetScan"                                                                                                
+[62] "QuickGO"                                                                                                   
+[63] "CIS-BP"                                                                                                    
+[64] "CTCFBSDB 2.0"                                                                                              
+[65] "HOCOMOCO v11"                                                                                              
+[66] "JASPAR 2022"                                                                                               
+[67] "Jolma 2013"                                                                                                
+[68] "SwissRegulon"                                                                                              
+[69] "ENCODE SCREEN v3"                                                                                          
+[70] "MassBank"                                                                                                  
+[71] "excluderanges"                                                                                             
+[72] "ENCODE"                                                                                                    
+[73] "GitHub"                                                                                                    
+[74] "Stanford.edu"                                                                                              
+[75] "Publication"                                                                                               
+[76] "CHM13"                                                                                                     
+[77] "UCSChub"                                                                                                   
+[78] "Google DeepMind"                                                                                           
+[79] "UWashington"                                                                                               
+[80] "Bioconductor"                                                                                              
+[81] "ENCODE cCREs"                                                                                              
+[82] "The Human Phenotype Ontology"                                                                              
+[83] "MGI"                                                                                                       
+[84] "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/"                                                                     </code></pre>
+</div>
+</div>
+<p>Now that we know the types of information available from AnnotationHub we can query it for the information we want using the <code>query()</code> function. Let’s say we would like to <strong>return the Ensembl <code>EnsDb</code> information for Human</strong>. To return the records available, we need to use the terms as they are output from the <code>ah</code> object to extract the desired data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Query AnnotationHub</span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>human_ens <span class="ot">&lt;-</span> <span class="fu">query</span>(ah, <span class="fu">c</span>(<span class="st">"Homo sapiens"</span>, <span class="st">"EnsDb"</span>))</span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>human_ens</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>AnnotationHub with 28 records
+# snapshotDate(): 2024-10-28
+# $dataprovider: Ensembl
+# $species: Homo sapiens
+# $rdataclass: EnsDb
+# additional mcols(): taxonomyid, genome, description,
+#   coordinate_1_based, maintainer, rdatadateadded, preparerclass, tags,
+#   rdatapath, sourceurl, sourcetype 
+# retrieve records with, e.g., 'object[["AH53211"]]' 
+
+             title                             
+  AH53211  | Ensembl 87 EnsDb for Homo Sapiens 
+  AH53715  | Ensembl 88 EnsDb for Homo Sapiens 
+  AH56681  | Ensembl 89 EnsDb for Homo Sapiens 
+  AH57757  | Ensembl 90 EnsDb for Homo Sapiens 
+  AH60773  | Ensembl 91 EnsDb for Homo Sapiens 
+  ...        ...                               
+  AH109606 | Ensembl 109 EnsDb for Homo sapiens
+  AH113665 | Ensembl 110 EnsDb for Homo sapiens
+  AH116291 | Ensembl 111 EnsDb for Homo sapiens
+  AH116860 | Ensembl 112 EnsDb for Homo sapiens
+  AH119325 | Ensembl 113 EnsDb for Homo sapiens</code></pre>
+</div>
+</div>
+<p>The query retrieves all <strong>hits for the <code>EnsDb</code> objects</strong>, and you will see that they are listed by the release number. The most current release for GRCh38 is Ensembl98 and AnnotationHub offers that as an option to use. However, if you look at options for older releases, for Homo sapiens it only go back as far as Ensembl 87. This is fine if you are using GRCh38, however if you were using an older genome build like hg19/GRCh37, you would need to load the <code>EnsDb</code> package if available for that release or you might need to build your own with <code>ensembldb</code>.</p>
+<p>In our case, we are looking for the latest Ensembl release so that the annotations are the most up-to-date. To extract this information from AnnotationHub, we can use the AnnotationHub ID to <strong>subset the object</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract annotations of interest</span></span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>human_ens <span class="ot">&lt;-</span> human_ens[[<span class="st">"AH75011"</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>loading from cache</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a>human_ens</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>EnsDb for Ensembl:
+|Backend: SQLite
+|Db type: EnsDb
+|Type of Gene ID: Ensembl Gene ID
+|Supporting package: ensembldb
+|Db created by: ensembldb package from Bioconductor
+|script_version: 0.3.5
+|Creation time: Mon Nov 18 21:12:12 2019
+|ensembl_version: 98
+|ensembl_host: localhost
+|Organism: Homo sapiens
+|taxonomy_id: 9606
+|genome_build: GRCh38
+|DBSCHEMAVERSION: 2.1
+| No. of genes: 67946.
+| No. of transcripts: 250194.
+|Protein data available.</code></pre>
+</div>
+</div>
+<p>Now we can use <code>ensembldb</code> functions to extract the information at the gene, transcript, or exon levels. We are interested in the gene-level annotations, so we can extract that information as follows:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract gene-level information</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a><span class="fu">genes</span>(human_ens, <span class="at">return.type =</span> <span class="st">"data.frame"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          gene_id   gene_name                       gene_biotype gene_seq_start
+1 ENSG00000223972     DDX11L1 transcribed_unprocessed_pseudogene          11869
+2 ENSG00000227232      WASH7P             unprocessed_pseudogene          14404
+3 ENSG00000278267   MIR6859-1                              miRNA          17369
+4 ENSG00000243485 MIR1302-2HG                             lncRNA          29554
+5 ENSG00000284332   MIR1302-2                              miRNA          30366
+6 ENSG00000237613     FAM138A                             lncRNA          34554
+  gene_seq_end seq_name seq_strand seq_coord_system
+1        14409        1          1       chromosome
+2        29570        1         -1       chromosome
+3        17436        1         -1       chromosome
+4        31109        1          1       chromosome
+5        30503        1          1       chromosome
+6        36081        1         -1       chromosome
+                                                                       description
+1                DEAD/H-box helicase 11 like 1 [Source:HGNC Symbol;Acc:HGNC:37102]
+2            WASP family homolog 7, pseudogene [Source:HGNC Symbol;Acc:HGNC:38034]
+3                              microRNA 6859-1 [Source:HGNC Symbol;Acc:HGNC:50039]
+4                          MIR1302-2 host gene [Source:HGNC Symbol;Acc:HGNC:52482]
+5                              microRNA 1302-2 [Source:HGNC Symbol;Acc:HGNC:35294]
+6 family with sequence similarity 138 member A [Source:HGNC Symbol;Acc:HGNC:32334]
+    gene_id_version      symbol entrezid
+1 ENSG00000223972.5     DDX11L1       NA
+2 ENSG00000227232.5      WASH7P       NA
+3 ENSG00000278267.1   MIR6859-1       NA
+4 ENSG00000243485.5 MIR1302-2HG       NA
+5 ENSG00000284332.1   MIR1302-2       NA
+6 ENSG00000237613.2     FAM138A       NA</code></pre>
+</div>
+</div>
+<p>But note that it is just as easy to get the transcript- or exon-level information:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract transcript-level information</span></span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a><span class="fu">transcripts</span>(human_ens, <span class="at">return.type =</span> <span class="st">"data.frame"</span>) <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            tx_id     tx_biotype tx_seq_start tx_seq_end tx_cds_seq_start
+1 ENST00000387314        Mt_tRNA          577        647               NA
+2 ENST00000389680        Mt_rRNA          648       1601               NA
+3 ENST00000387342        Mt_tRNA         1602       1670               NA
+4 ENST00000387347        Mt_rRNA         1671       3229               NA
+5 ENST00000612848 protein_coding         2585      11802             2676
+6 ENST00000386347        Mt_tRNA         3230       3304               NA
+  tx_cds_seq_end         gene_id tx_support_level     tx_id_version gc_content
+1             NA ENSG00000210049               NA ENST00000387314.1   40.84507
+2             NA ENSG00000211459               NA ENST00000389680.2   45.49266
+3             NA ENSG00000210077               NA ENST00000387342.1   42.02899
+4             NA ENSG00000210082               NA ENST00000387347.2   42.78384
+5          11615 ENSG00000276345                1 ENST00000612848.1   66.21622
+6             NA ENSG00000209082               NA ENST00000386347.1   38.66667
+          tx_name
+1 ENST00000387314
+2 ENST00000389680
+3 ENST00000387342
+4 ENST00000387347
+5 ENST00000612848
+6 ENST00000386347</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract exon-level information</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a><span class="fu">exons</span>(human_ens, <span class="at">return.type =</span> <span class="st">"data.frame"</span>) <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          exon_id exon_seq_start exon_seq_end
+1 ENSE00001544501            577          647
+2 ENSE00001544499            648         1601
+3 ENSE00001544498           1602         1670
+4 ENSE00001544497           1671         3229
+5 ENSE00003754502           2585         2692
+6 ENSE00002006242           3230         3304</code></pre>
+</div>
+</div>
+<p>To <strong>obtain an annotation data frame</strong> using AnnotationHub, we’ll use the <code>genes()</code> function, but only keep selected columns and filter out rows to keep those corresponding to our gene identifiers in our results file:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a gene-level dataframe </span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>annotations_ahb <span class="ot">&lt;-</span> <span class="fu">genes</span>(human_ens, <span class="at">return.type =</span> <span class="st">"data.frame"</span>)  <span class="sc">%&gt;%</span></span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(gene_id, gene_name, entrezid, gene_biotype) <span class="sc">%&gt;%</span> </span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(gene_id <span class="sc">%in%</span> res_tableOE_tb<span class="sc">$</span>gene)</span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_ahb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          gene_id   gene_name entrezid                       gene_biotype
+1 ENSG00000223972     DDX11L1       NA transcribed_unprocessed_pseudogene
+2 ENSG00000227232      WASH7P       NA             unprocessed_pseudogene
+3 ENSG00000278267   MIR6859-1       NA                              miRNA
+4 ENSG00000243485 MIR1302-2HG       NA                             lncRNA
+5 ENSG00000284332   MIR1302-2       NA                              miRNA
+6 ENSG00000237613     FAM138A       NA                             lncRNA</code></pre>
+</div>
+</div>
+<p>This dataframe looks like it should be fine as it is, but we look a little closer we will notice that the column containing Entrez identifiers is a list, and in fact there are many Ensembl identifiers that map to more than one Entrez identifier!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Wait a second, we don't have one-to-one mappings!</span></span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(annotations_ahb<span class="sc">$</span>entrezid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "list"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="co"># which(map(annotations_ahb$entrezid, length) &gt; 1) </span></span>
+<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a><span class="co"># which(map(annotations_ahb$entrezid, length) &gt; 1) %&gt;% length()</span></span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a>annotations_ahb <span class="sc">%&gt;%</span></span>
+<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">test =</span> <span class="fu">map</span>(entrezid,<span class="cf">function</span>(x){</span>
+<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">length</span>(x) <span class="sc">&gt;</span> <span class="dv">1</span></span>
+<span id="cb96-7"><a href="#cb96-7" aria-hidden="true" tabindex="-1"></a>  }) <span class="sc">%&gt;%</span> <span class="fu">unlist</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb96-8"><a href="#cb96-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(test <span class="sc">==</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            gene_id       gene_name     entrezid           gene_biotype test
+1   ENSG00000229571        PRAMEF25 441873, ....         protein_coding TRUE
+2   ENSG00000158747            NBL1 4681, 10....         protein_coding TRUE
+3   ENSG00000127603           MACF1 23499, 6....         protein_coding TRUE
+4   ENSG00000189195           BTBD8 23285, 2....         protein_coding TRUE
+5   ENSG00000137936           BCAR3 8412, 723788         protein_coding TRUE
+6   ENSG00000264343       NOTCH2NLA 388677, ....         protein_coding TRUE
+7   ENSG00000163156           SCNM1 79005, 1....         protein_coding TRUE
+8   ENSG00000143226          FCGR2A   2212, 9103         protein_coding TRUE
+9   ENSG00000120341          SEC16B 89866, 1....         protein_coding TRUE
+10  ENSG00000143702          CEP170 9859, 645455         protein_coding TRUE
+11  ENSG00000225830           ERCC6 2074, 267004         protein_coding TRUE
+12  ENSG00000214026          MRPL23 6150, 10....         protein_coding TRUE
+13  ENSG00000133816          MICAL2  9645, 84953         protein_coding TRUE
+14  ENSG00000130035          GALNT8  3742, 26290         protein_coding TRUE
+15  ENSG00000213809           KLRK1 22914, 1....         protein_coding TRUE
+16  ENSG00000111215            PRR4  5554, 11272         protein_coding TRUE
+17  ENSG00000212127         TAS2R14 50840, 1....         protein_coding TRUE
+18  ENSG00000255374         TAS2R43 259289, ....         protein_coding TRUE
+19  ENSG00000187510        C12orf74 338809, ....         protein_coding TRUE
+20  ENSG00000178882           RFLNA 144347, ....         protein_coding TRUE
+21  ENSG00000186047           DLEU7 220107, ....         protein_coding TRUE
+22  ENSG00000134899           ERCC5 2073, 10....         protein_coding TRUE
+23  ENSG00000257365            FNTB 2342, 10....         protein_coding TRUE
+24  ENSG00000261247         GOLGA8T 653075, ....         protein_coding TRUE
+25  ENSG00000178115         GOLGA8Q 727909, ....         protein_coding TRUE
+26  ENSG00000137843            PAK6 56924, 1....         protein_coding TRUE
+27  ENSG00000138594           TMOD3 29766, 1....         protein_coding TRUE
+28  ENSG00000278662       GOLGA6L10 647042, ....         protein_coding TRUE
+29  ENSG00000183426          NPIPA1 9284, 10....         protein_coding TRUE
+30  ENSG00000179889          PDXDC1 23042, 1....         protein_coding TRUE
+31  ENSG00000185164           NOMO2 283820, ....         protein_coding TRUE
+32  ENSG00000205456        TP53TG3D 729264, ....         protein_coding TRUE
+33  ENSG00000183632         TP53TG3 24150, 1....         protein_coding TRUE
+34  ENSG00000205457        TP53TG3C 653550, ....         protein_coding TRUE
+35  ENSG00000261509        TP53TG3B 729355, ....         protein_coding TRUE
+36  ENSG00000168802           CHTF8 54921, 1....         protein_coding TRUE
+37  ENSG00000140836           ZFHX3  463, 388289         protein_coding TRUE
+38  ENSG00000262628           OR1D5 8386, 653166         protein_coding TRUE
+39  ENSG00000126861             OMG 4974, 10....         protein_coding TRUE
+40  ENSG00000274808         TBC1D3B 414059, ....         protein_coding TRUE
+41  ENSG00000276085          CCL3L1 6349, 414062         protein_coding TRUE
+42  ENSG00000276070          CCL4L2 9560, 388372         protein_coding TRUE
+43  ENSG00000273513         TBC1D3K 10106035....         protein_coding TRUE
+44  ENSG00000274512         TBC1D3L 729873, ....         protein_coding TRUE
+45  ENSG00000131737           KRT34 3885, 10....         protein_coding TRUE
+46  ENSG00000263715 LINC02210-CRHR1 1394, 10....         protein_coding TRUE
+47  ENSG00000120088           CRHR1 1394, 10....         protein_coding TRUE
+48  ENSG00000228696          ARL17B 51326, 1....         protein_coding TRUE
+49  ENSG00000185829          ARL17A 51326, 1....         protein_coding TRUE
+50  ENSG00000108379            WNT3 7473, 10....         protein_coding TRUE
+51  ENSG00000227036       LINC00511 400619, ....                 lncRNA TRUE
+52  ENSG00000167476           JSRP1 126306, ....         protein_coding TRUE
+53  ENSG00000268480       LINC01862 10537226....         protein_coding TRUE
+54  ENSG00000213999           MEF2B 4207, 10....         protein_coding TRUE
+55  ENSG00000205076          LGALS7 3963, 653499         protein_coding TRUE
+56  ENSG00000178934         LGALS7B 3963, 653499         protein_coding TRUE
+57  ENSG00000204604          ZNF468 90333, 1....         protein_coding TRUE
+58  ENSG00000160336          ZNF761 388561, ....         protein_coding TRUE
+59  ENSG00000204577          LILRB3 11025, 1....         protein_coding TRUE
+60  ENSG00000189013         KIR2DL4 3805, 11....         protein_coding TRUE
+61  ENSG00000115239            ASB3 51130, 1....         protein_coding TRUE
+62  ENSG00000186854         TRABD2A 129293, ....         protein_coding TRUE
+63  ENSG00000213160          KLHL23 151230, ....         protein_coding TRUE
+64  ENSG00000088298           EDEM2 55741, 1....         protein_coding TRUE
+65  ENSG00000273590         SMIM11B 54065, 1....         protein_coding TRUE
+66  ENSG00000155307          SAMSN1 64092, 3....         protein_coding TRUE
+67  ENSG00000229425      AJ009632.2 10192774....                 lncRNA TRUE
+68  ENSG00000160209            PDXK 8566, 10....         protein_coding TRUE
+69  ENSG00000160221          GATD3A 8209, 10....         protein_coding TRUE
+70  ENSG00000099977             DDT 1652, 10....         protein_coding TRUE
+71  ENSG00000128383        APOBEC3A 200315, ....         protein_coding TRUE
+72  ENSG00000100197          CYP2D6 1565, 10....         protein_coding TRUE
+73  ENSG00000186448          ZNF197 10168, 1....         protein_coding TRUE
+74  ENSG00000114316            USP4 7375, 10....         protein_coding TRUE
+75  ENSG00000283154     IQCJ-SCHIP1 29970, 1....         protein_coding TRUE
+76  ENSG00000153071            DAB2 1601, 11....         protein_coding TRUE
+77  ENSG00000205572          SERF1B 8293, 728492         protein_coding TRUE
+78  ENSG00000205571            SMN2   6606, 6607         protein_coding TRUE
+79  ENSG00000145736          GTF2H2 2966, 728340         protein_coding TRUE
+80  ENSG00000249981      AC145141.1 10798742....                 lncRNA TRUE
+81  ENSG00000145979          TBC1D7 51256, 1....         protein_coding TRUE
+82  ENSG00000241370           RPP21 79897, 2....         protein_coding TRUE
+83  ENSG00000146112         PPP1R18 170954, ....         protein_coding TRUE
+84  ENSG00000244355          LY6G6D 58530, 1....         protein_coding TRUE
+85  ENSG00000244731             C4A 720, 110....         protein_coding TRUE
+86  ENSG00000237541        HLA-DQA2   3117, 3118         protein_coding TRUE
+87  ENSG00000204209            DAXX 1616, 11....         protein_coding TRUE
+88  ENSG00000124713            GNMT 27232, 1....         protein_coding TRUE
+89  ENSG00000112541          PDE10A 10846, 90632         protein_coding TRUE
+90  ENSG00000152926          ZNF117 51351, 1....         protein_coding TRUE
+91  ENSG00000157224          CLDN12 9069, 10....         protein_coding TRUE
+92  ENSG00000267368         UPK3BL1 10013493....         protein_coding TRUE
+93  ENSG00000215378          DEFT1P 170949, .... unprocessed_pseudogene TRUE
+94  ENSG00000236125         USP17L4 392188, ....         protein_coding TRUE
+95  ENSG00000177257          DEFB4B 1673, 10....         protein_coding TRUE
+96  ENSG00000177243        DEFB103B 55894, 4....         protein_coding TRUE
+97  ENSG00000186599        DEFB105B 245908, ....         protein_coding TRUE
+98  ENSG00000198129        DEFB107B 245910, ....         protein_coding TRUE
+99  ENSG00000255251         PRR23D1 10013160....         protein_coding TRUE
+100 ENSG00000171711          DEFB4A 1673, 10....         protein_coding TRUE
+101 ENSG00000226430         USP17L7 392197, ....         protein_coding TRUE
+102 ENSG00000223443         USP17L2 377630, ....         protein_coding TRUE
+103 ENSG00000104237             RP1 6101, 10....         protein_coding TRUE
+104 ENSG00000104205            SGK3 23678, 5....         protein_coding TRUE
+105 ENSG00000265817            FSBP 25788, 1....         protein_coding TRUE
+106 ENSG00000107014            RLN2   6013, 6019         protein_coding TRUE
+107 ENSG00000165269            AQP7 364, 112....         protein_coding TRUE
+108 ENSG00000213694           S1PR3 1903, 286223         protein_coding TRUE
+109 ENSG00000011454         RABGAP1  2844, 23637         protein_coding TRUE
+110 ENSG00000278633      AC023491.2 10192973....         protein_coding TRUE
+111 ENSG00000125363           AMELX     265, 266         protein_coding TRUE
+112 ENSG00000224659         GAGE12J 26749, 7....         protein_coding TRUE
+113 ENSG00000236362         GAGE12F 2574, 25....         protein_coding TRUE
+114 ENSG00000189064          GAGE2A 645037, ....         protein_coding TRUE
+115 ENSG00000204131           NHSL2 340527, ....         protein_coding TRUE
+116 ENSG00000158301         GPRASP2 114928, ....         protein_coding TRUE
+117 ENSG00000269096          CT45A3 441519, ....         protein_coding TRUE
+118 ENSG00000258992           TSPY1 7258, 72....         protein_coding TRUE
+119 ENSG00000114374           USP9Y  8287, 64595         protein_coding TRUE
+120 ENSG00000129864             VCY 9084, 353513         protein_coding TRUE
+121 ENSG00000182415           CDY2A 9085, 94....         protein_coding TRUE
+122 ENSG00000172468           HSFY1 86614, 1....         protein_coding TRUE
+123 ENSG00000169953           HSFY2 86614, 1....         protein_coding TRUE
+124 ENSG00000169807            PRY2 9081, 442862         protein_coding TRUE
+125 ENSG00000169800          RBMY1F 5940, 15....         protein_coding TRUE
+126 ENSG00000183753            BPY2 9083, 44....         protein_coding TRUE
+127 ENSG00000205944            DAZ2 57054, 5....         protein_coding TRUE
+128 ENSG00000172352           CDY1B 9085, 253175         protein_coding TRUE</code></pre>
+</div>
+</div>
+<p>So what do we do here? And why do we have this problem? An answer from the <a href="https://www.biostars.org/p/16505/">Ensembl Help Desk</a> is that this occurs when we cannot choose a perfect match; ie when we have two good matches, but one does not appear to match with a better percentage than the other. In that case, we assign both matches. What we will do is choose to <strong>keep the first identifier for these multiple mapping cases</strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="co"># annotations_ahb$test &lt;- map(annotations_ahb$entrezid,1) %&gt;%  unlist()</span></span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> annotations_ahb <span class="sc">%&gt;%</span></span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">entrezid_first =</span> <span class="fu">map</span>(entrezid,<span class="cf">function</span>(x){</span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>    x[<span class="dv">1</span>]</span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>  }) <span class="sc">%&gt;%</span> <span class="fu">unlist</span>())</span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-8"><a href="#cb98-8" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 57547     5</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          gene_id   gene_name entrezid                       gene_biotype
+1 ENSG00000223972     DDX11L1       NA transcribed_unprocessed_pseudogene
+2 ENSG00000227232      WASH7P       NA             unprocessed_pseudogene
+3 ENSG00000278267   MIR6859-1       NA                              miRNA
+4 ENSG00000243485 MIR1302-2HG       NA                             lncRNA
+5 ENSG00000284332   MIR1302-2       NA                              miRNA
+6 ENSG00000237613     FAM138A       NA                             lncRNA
+  entrezid_first
+1             NA
+2             NA
+3             NA
+4             NA
+5             NA
+6             NA</code></pre>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> Not all databases handle multiple mappings in the same way. For example, if we used the OrgDb instead of the EnsDb:</p>
+<pre><code>human_orgdb &lt;- query(ah, c("org.Hs.eg.db.sqlite"))
+human_orgdb &lt;- human_orgdb[["AH116710"]]
+annotations_orgdb &lt;- AnnotationDbi::select(human_orgdb, res_tableOE_tb$gene, c("SYMBOL", "GENENAME", "ENTREZID"), "ENSEMBL")</code></pre>
+<p>We would find that multiple mapping entries would be automatically reduced to one-to-one. We would also find that more than half of the input genes do not return any annotations. This is because the OrgDb family of database are primarily based on mapping using Entrez Gene identifiers. Since our data is based on Ensembl mappings, using the OrgDb would result in a loss of information.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>human_orgdb <span class="ot">&lt;-</span> <span class="fu">query</span>(ah, <span class="fu">c</span>(<span class="st">"org.Hs.eg.db.sqlite"</span>))</span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>human_orgdb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>AnnotationHub with 1 record
+# snapshotDate(): 2024-10-28
+# names(): AH117067
+# $dataprovider: ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/
+# $species: Homo sapiens
+# $rdataclass: OrgDb
+# $rdatadateadded: 2024-09-30
+# $title: org.Hs.eg.db.sqlite
+# $description: NCBI gene ID based annotations about Homo sapiens
+# $taxonomyid: 9606
+# $genome: NCBI genomes
+# $sourcetype: NCBI/ensembl
+# $sourceurl: ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/, ftp://ftp.ensembl.org/p...
+# $sourcesize: NA
+# $tags: c("NCBI", "Gene", "Annotation") 
+# retrieve record with 'object[["AH117067"]]' </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="co"># pick the correct record version</span></span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a>human_orgdb <span class="ot">&lt;-</span> human_orgdb[[<span class="st">"AH117067"</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>loading from cache</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a>annotations_orgdb <span class="ot">&lt;-</span> AnnotationDbi<span class="sc">::</span><span class="fu">select</span>(human_orgdb, res_tableOE_tb<span class="sc">$</span>gene, <span class="fu">c</span>(<span class="st">"SYMBOL"</span>, <span class="st">"GENENAME"</span>, <span class="st">"ENTREZID"</span>), <span class="st">"ENSEMBL"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations_orgdb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          ENSEMBL SYMBOL
+1 ENSG00000000003 TSPAN6
+2 ENSG00000000005   TNMD
+3 ENSG00000000419   DPM1
+4 ENSG00000000457  SCYL3
+5 ENSG00000000460  FIRRM
+6 ENSG00000000938    FGR
+                                                     GENENAME ENTREZID
+1                                               tetraspanin 6     7105
+2                                                 tenomodulin    64102
+3 dolichyl-phosphate mannosyltransferase subunit 1, catalytic     8813
+4                                    SCY1 like pseudokinase 3    57147
+5   FIGNL1 interacting regulator of recombination and mitosis    55732
+6              FGR proto-oncogene, Src family tyrosine kinase     2268</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations_orgdb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 58681     4</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>annotations_orgdb <span class="sc">%&gt;%</span></span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">test =</span> <span class="fu">is.na</span>(SYMBOL)) <span class="sc">%&gt;%</span></span>
+<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(test) <span class="sc">%&gt;%</span></span>
+<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  test      n
+  &lt;lgl&gt; &lt;int&gt;
+1 FALSE 36556
+2 TRUE  22125</code></pre>
+</div>
+</div>
+<p>Let’s take a look and see how many of our Ensembl identifiers have an associated gene symbol, and how many of them are unique:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a><span class="co"># which(is.na(annotations_ahb$gene_name)) %&gt;% length()</span></span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a><span class="co"># which(duplicated(annotations_ahb$gene_name)) %&gt;% length()</span></span>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>annotations_ahb <span class="sc">%&gt;%</span></span>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="fu">is.na</span>(gene_name)) <span class="sc">%&gt;%</span></span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 2
+  `is.na(gene_name)`     n
+  &lt;lgl&gt;              &lt;int&gt;
+1 FALSE              57547</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a>annotations_ahb <span class="sc">%&gt;%</span></span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="fu">duplicated</span>(gene_name)) <span class="sc">%&gt;%</span></span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  `duplicated(gene_name)`     n
+  &lt;lgl&gt;                   &lt;int&gt;
+1 FALSE                   56403
+2 TRUE                     1144</code></pre>
+</div>
+</div>
+<p>Let’s identify the non-duplicated genes and only keep the ones that are not duplicated:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the indices for the non-duplicated genes</span></span>
+<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a><span class="co"># non_duplicates_idx &lt;- which(duplicated(annotations_ahb$gene_name) == FALSE)</span></span>
+<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Return only the non-duplicated genes using indices</span></span>
+<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a><span class="co"># annotations_ahb &lt;- annotations_ahb[non_duplicates_idx, ]</span></span>
+<span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a><span class="co"># How many rows does annotations_ahb have?</span></span>
+<span id="cb119-8"><a href="#cb119-8" aria-hidden="true" tabindex="-1"></a>annotations_ahb <span class="sc">%&gt;%</span> <span class="fu">nrow</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 57547</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="co"># How many rows are we left with after removing?</span></span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>annotations_ahb2 <span class="ot">&lt;-</span> annotations_ahb <span class="sc">%&gt;%</span> </span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">duplicated</span>(gene_name))</span>
+<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a>annotations_ahb2 <span class="sc">%&gt;%</span> <span class="fu">nrow</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 56403</code></pre>
+</div>
+</div>
+<p>Finally, it would be good to know <strong>what proportion of the Ensembl identifiers map to an Entrez identifier</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine how many of the Entrez column entries are NA</span></span>
+<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a><span class="co"># which(is.na(annotations_ahb2$entrezid)) %&gt;%  length()</span></span>
+<span id="cb123-3"><a href="#cb123-3" aria-hidden="true" tabindex="-1"></a>annotations_ahb2 <span class="sc">%&gt;%</span></span>
+<span id="cb123-4"><a href="#cb123-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="fu">is.na</span>(entrezid)) <span class="sc">%&gt;%</span></span>
+<span id="cb123-5"><a href="#cb123-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  `is.na(entrezid)`     n
+  &lt;lgl&gt;             &lt;int&gt;
+1 FALSE             20257
+2 TRUE              36146</code></pre>
+</div>
+</div>
+<p>That’s more than half of our genes! If we plan on using Entrez ID results for downstream analysis, we should definitely keep this in mind. If you look at some of the Ensembl IDs from our query that returned NA, these map to pseudogenes (i.e <a href="https://useast.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000265439;r=6:44209766-44210063;t=ENST00000580735">ENSG00000265439</a>) or non-coding RNAs (i.e.&nbsp;<a href="http://useast.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000265425;r=18:68427030-68436918;t=ENST00000577835">ENSG00000265425</a>). The discrepancy (which we can expect to observe) between databases is due to the fact that each implements its own different computational approaches for generating the gene builds.</p>
+<section id="using-annotationhub-to-create-our-tx2gene-file" class="level3">
+<h3 class="anchored" data-anchor-id="using-annotationhub-to-create-our-tx2gene-file">Using AnnotationHub to create our tx2gene file</h3>
+<p>To create our <code>tx2gene</code> file, we would need to use a combination of the methods above and merge two dataframes together. For example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a transcript dataframe</span></span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a>txdb <span class="ot">&lt;-</span> <span class="fu">transcripts</span>(human_ens, <span class="at">return.type =</span> <span class="st">"data.frame"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(tx_id, gene_id)</span>
+<span id="cb125-4"><a href="#cb125-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-5"><a href="#cb125-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(txdb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 250194      2</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb127"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(txdb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            tx_id         gene_id
+1 ENST00000387314 ENSG00000210049
+2 ENST00000389680 ENSG00000211459
+3 ENST00000387342 ENSG00000210077
+4 ENST00000387347 ENSG00000210082
+5 ENST00000612848 ENSG00000276345
+6 ENST00000386347 ENSG00000209082</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb129"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb129-1"><a href="#cb129-1" aria-hidden="true" tabindex="-1"></a>txdb2 <span class="ot">&lt;-</span> txdb[<span class="fu">grep</span>(<span class="st">"ENST"</span>, txdb<span class="sc">$</span>tx_id),]</span>
+<span id="cb129-2"><a href="#cb129-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-3"><a href="#cb129-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(txdb2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 249158      2</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb131"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(txdb2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            tx_id         gene_id
+1 ENST00000387314 ENSG00000210049
+2 ENST00000389680 ENSG00000211459
+3 ENST00000387342 ENSG00000210077
+4 ENST00000387347 ENSG00000210082
+5 ENST00000612848 ENSG00000276345
+6 ENST00000386347 ENSG00000209082</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a gene-level dataframe</span></span>
+<span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a>genedb <span class="ot">&lt;-</span> <span class="fu">genes</span>(human_ens, <span class="at">return.type =</span> <span class="st">"data.frame"</span>)  <span class="sc">%&gt;%</span></span>
+<span id="cb133-3"><a href="#cb133-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(gene_id, gene_name)</span>
+<span id="cb133-4"><a href="#cb133-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb133-5"><a href="#cb133-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(genedb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 67946     2</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(genedb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          gene_id   gene_name
+1 ENSG00000223972     DDX11L1
+2 ENSG00000227232      WASH7P
+3 ENSG00000278267   MIR6859-1
+4 ENSG00000243485 MIR1302-2HG
+5 ENSG00000284332   MIR1302-2
+6 ENSG00000237613     FAM138A</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Merge the two dataframes together</span></span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>annotations <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(txdb, genedb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining with `by = join_by(gene_id)`</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 250194      3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            tx_id         gene_id  gene_name
+1 ENST00000387314 ENSG00000210049      MT-TF
+2 ENST00000389680 ENSG00000211459    MT-RNR1
+3 ENST00000387342 ENSG00000210077      MT-TV
+4 ENST00000387347 ENSG00000210082    MT-RNR2
+5 ENST00000612848 ENSG00000276345 AC004556.3
+6 ENST00000386347 ENSG00000209082     MT-TL1</code></pre>
+</div>
+</div>
+<p>In this lesson our focus has been using annotation packages to extract information mainly just for gene ID conversion for the different tools that we use downstream. Many of the annotation packages we have presented have much more information than what we need for functional analysis and we have only just scratched the surface here. It’s good to know the capabilities of the tools we use, so we encourage you to spend some time exploring these packages to become more familiar with them.</p>
+<blockquote class="blockquote">
+<p><strong>NOTE:</strong> The <em>annotables</em> package is a super easy annotation package to use. It is not updated frequently, so it’s not great for getting the most up-to-date information for the current builds and does not have information for other organisms than human and mouse, but is a quick way to get annotation information.</p>
+<div class="sourceCode" id="cb143"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install package</span></span>
+<span id="cb143-2"><a href="#cb143-2" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"annotables"</span>)</span>
+<span id="cb143-3"><a href="#cb143-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb143-4"><a href="#cb143-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load library</span></span>
+<span id="cb143-5"><a href="#cb143-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(annotables)</span>
+<span id="cb143-6"><a href="#cb143-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb143-7"><a href="#cb143-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Access previous build of annotations</span></span>
+<span id="cb143-8"><a href="#cb143-8" aria-hidden="true" tabindex="-1"></a>grch38</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</blockquote>
+<p>Test the package</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb144"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load library</span></span>
+<span id="cb144-2"><a href="#cb144-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(annotables)</span>
+<span id="cb144-3"><a href="#cb144-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb144-4"><a href="#cb144-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Access previous build of annotations</span></span>
+<span id="cb144-5"><a href="#cb144-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(grch38)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 91673     9</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb146"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(grch38)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 9
+  ensgene         entrez symbol chr      start    end strand biotype description
+  &lt;chr&gt;            &lt;int&gt; &lt;chr&gt;  &lt;chr&gt;    &lt;int&gt;  &lt;int&gt;  &lt;int&gt; &lt;chr&gt;   &lt;chr&gt;      
+1 ENSG00000000003   7105 TSPAN6 X       1.01e8 1.01e8     -1 protei… tetraspani…
+2 ENSG00000000005  64102 TNMD   X       1.01e8 1.01e8      1 protei… tenomodulin
+3 ENSG00000000419   8813 DPM1   20      5.09e7 5.10e7     -1 protei… dolichyl-p…
+4 ENSG00000000457  57147 SCYL3  1       1.70e8 1.70e8     -1 protei… SCY1 like …
+5 ENSG00000000460  55732 FIRRM  1       1.70e8 1.70e8      1 protei… FIGNL1 int…
+6 ENSG00000000938   2268 FGR    1       2.76e7 2.76e7     -1 protei… FGR proto-…</code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
