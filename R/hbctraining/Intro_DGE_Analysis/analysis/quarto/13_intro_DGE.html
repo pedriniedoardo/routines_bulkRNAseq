@@ -308,12 +308,21 @@ Figure&nbsp;5
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="st">"../../data/tx2gene_grch38_ens94.txt"</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Take a look at it </span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="sc">%&gt;%</span> <span class="fu">View</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            tx_id         ensgene     symbol
+1 ENST00000387314 ENSG00000210049      MT-TF
+2 ENST00000389680 ENSG00000211459    MT-RNR1
+3 ENST00000387342 ENSG00000210077      MT-TV
+4 ENST00000387347 ENSG00000210082    MT-RNR2
+5 ENST00000612848 ENSG00000276345 AC004556.1
+6 ENST00000386347 ENSG00000209082     MT-TL1</code></pre>
+</div>
 </div>
 <p><strong><code>tx2gene</code></strong> is a three-column <strong>data frame linking transcript ID (column 1) to gene ID (column 2)</strong> to gene symbol (column 3). We will take the first two columns as input to <code>tximport</code>. The <strong>column names are not relevant, but the column order is (i.e transcript ID must be first).</strong></p>
 <p>Now we are ready to <strong>run <code>tximport</code></strong>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>?tximport   <span class="co"># let's take a look at the arguments for the tximport function</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>?tximport   <span class="co"># let's take a look at the arguments for the tximport function</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <code>tximport()</code> function imports transcript-level estimates from various external software (e.g.&nbsp;Salmon, Kallisto) and summarizes to the gene-level (default) or outputs transcript-level matrices. There are optional arguments to use the abundance estimates as they appear in the <code>quant.sf</code> files or to calculate alternative values.</p>
 <p>For our analysis we <strong>need non-normalized or “raw” count estimates at the gene-level for performing DESeq2 analysis</strong>.</p>
@@ -327,8 +336,8 @@ Figure&nbsp;5
 <p>Let’s review how TPM values are calculated: 1. Divide the read counts by the length of each gene in kilobases. This gives you reads per kilobase (RPK). 2. Count up all the RPK values in a sample and divide this number by 1,000,000. This is your “per million” scaling factor. 3. Divide the RPK values by the “per million” scaling factor. This gives you TPM.</p>
 </blockquote>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run tximport</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type=</span><span class="st">"salmon"</span>, <span class="at">tx2gene=</span>tx2gene[,<span class="fu">c</span>(<span class="st">"tx_id"</span>, <span class="st">"ensgene"</span>)], <span class="at">countsFromAbundance=</span><span class="st">"lengthScaledTPM"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run tximport</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type=</span><span class="st">"salmon"</span>, <span class="at">tx2gene=</span>tx2gene[,<span class="fu">c</span>(<span class="st">"tx_id"</span>, <span class="st">"ensgene"</span>)], <span class="at">countsFromAbundance=</span><span class="st">"lengthScaledTPM"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>reading in files with read_tsv</code></pre>
 </div>
@@ -339,8 +348,8 @@ summarizing abundance
 summarizing counts
 summarizing length</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># se the structure of the object</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># se the structure of the object</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>List of 4
  $ abundance          : num [1:57761, 1:8] 63.78 0.69 47.79 4.31 17.55 ...
@@ -357,8 +366,8 @@ summarizing length</code></pre>
   .. ..$ : chr [1:8] "Irrel_kd_1" "Irrel_kd_2" "Irrel_kd_3" "Mov10_kd_2" ...
  $ countsFromAbundance: chr "lengthScaledTPM"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the object</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(txi,<span class="st">"../../out/object/txi.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the object</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(txi,<span class="st">"../../out/object/txi.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <blockquote class="blockquote">
 <p><strong>An additional argument for <code>tximport</code></strong>: When performing your own analysis you may find that the reference transcriptome file you obtain from Ensembl will have version numbers included on your identifiers (i.e ENSG00000265439.2). This will cause a discrepancy with the tx2gene file since the annotation databases don’t usually contain version numbers (i.e ENSG00000265439). To get around this issue you can use the argument <code>ignoreTxVersion    = TRUE</code>. The logical value indicates whether to split the tx id on the ‘.’ character to remove version information, for easier matching.</p>
@@ -368,7 +377,7 @@ summarizing length</code></pre>
 <h3 class="anchored" data-anchor-id="viewing-data">Viewing data</h3>
 <p>The <code>txi</code> object is a simple list containing matrices of the abundance, counts, length. Another list element ‘countsFromAbundance’ carries through the character argument used in the tximport call. The length matrix contains the average transcript length for each gene which can be used as an offset for gene-level analysis.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attributes</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">attributes</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$names
 [1] "abundance"           "counts"              "length"             
@@ -377,15 +386,30 @@ summarizing length</code></pre>
 </div>
 <p>We will be using the <code>txi</code> object as is, for input into DESeq2 but will save it until the next lesson. <strong>For now let’s take a look at the count matrix.</strong> You will notice that there are decimal values, so let’s round to the nearest whole number and convert it into a dataframe. We wil save it to a variable called <code>data</code> that we can play with.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the counts</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>txi<span class="sc">$</span>counts <span class="sc">%&gt;%</span> <span class="fu">View</span>()</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Write the counts to an object</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> txi<span class="sc">$</span>counts <span class="sc">%&gt;%</span> </span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">round</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>()</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>data[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at the counts</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>txi<span class="sc">$</span>counts <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 Irrel_kd_1  Irrel_kd_2 Irrel_kd_3  Mov10_kd_2 Mov10_kd_3
+ENSG00000000003 4375.751722 3645.483112 2968.36018 6177.539799 3688.16902
+ENSG00000000005   27.259410   29.304293   23.31638   36.534194   13.14787
+ENSG00000000419 1478.158556 1287.569549  883.63968 2368.544452 1339.80470
+ENSG00000000457  507.916351  404.538329  357.20364  934.274776  571.37608
+ENSG00000000460 1393.739749 1164.378205  849.77430 2172.300020 1217.31401
+ENSG00000000938    1.058214    1.054427    0.00000    1.780558    0.00000
+                Mov10_oe_1 Mov10_oe_2 Mov10_oe_3
+ENSG00000000003 3343.09841 3114.21097 2079.30559
+ENSG00000000005   25.25078   38.11501   22.47582
+ENSG00000000419 1889.59603 1766.32555 1271.05675
+ENSG00000000457  646.46620  591.44175  354.09067
+ENSG00000000460 1183.43712 1138.51245  673.14907
+ENSG00000000938    0.00000    0.00000    0.00000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Write the counts to an object</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> txi<span class="sc">$</span>counts <span class="sc">%&gt;%</span> </span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">round</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>()</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>data[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                Irrel_kd_1 Irrel_kd_2 Irrel_kd_3 Mov10_kd_2 Mov10_kd_3
 ENSG00000000003       4376       3645       2968       6178       3688
@@ -410,8 +434,8 @@ ENSG00000001036       2938       3178       1664
 ENSG00000001084       2327       2415       1556
 ENSG00000001167       2634       2434       1371</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the raw table of counts</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(data,<span class="st">"../../out/object/raw_count.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the raw table of counts</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(data,<span class="st">"../../out/object/raw_count.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <blockquote class="blockquote">
 <h3 id="what-if-i-dont-have-salmon-pseudocounts-as-input" class="anchored">What if I don’t have Salmon pseudocounts as input?</h3>
@@ -422,10 +446,10 @@ ENSG00000001167       2634       2434       1371</code></pre>
 <h3 class="anchored" data-anchor-id="creating-metadata">Creating metadata</h3>
 <p>Of great importance is keeping track of the information about our data. At minimum, we need to at least <strong>have a file which maps our samples to the corresponding sample groups that we are investigating</strong>. We will use the columns headers from the counts matrix as the row names of our metadata file and have single column to identify each sample as “MOV10_overexpression”, “MOV10_knockdown”, or “control”.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Create a sampletable/metadata</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>sampletype <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">"control"</span>,<span class="dv">3</span>), <span class="fu">rep</span>(<span class="st">"MOV10_knockdown"</span>, <span class="dv">2</span>), <span class="fu">rep</span>(<span class="st">"MOV10_overexpression"</span>, <span class="dv">3</span>)))</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(sampletype, <span class="at">row.names =</span> <span class="fu">colnames</span>(txi<span class="sc">$</span>counts))</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>meta</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Create a sampletable/metadata</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>sampletype <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">"control"</span>,<span class="dv">3</span>), <span class="fu">rep</span>(<span class="st">"MOV10_knockdown"</span>, <span class="dv">2</span>), <span class="fu">rep</span>(<span class="st">"MOV10_overexpression"</span>, <span class="dv">3</span>)))</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(sampletype, <span class="at">row.names =</span> <span class="fu">colnames</span>(txi<span class="sc">$</span>counts))</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>meta</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                     sampletype
 Irrel_kd_1              control
@@ -437,8 +461,8 @@ Mov10_oe_1 MOV10_overexpression
 Mov10_oe_2 MOV10_overexpression
 Mov10_oe_3 MOV10_overexpression</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the metadata table</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(meta,<span class="st">"../../out/object/metadata.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the metadata table</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(meta,<span class="st">"../../out/object/metadata.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><strong>Now we are all set to start our analysis!</strong></p>
 </section>

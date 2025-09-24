@@ -156,7 +156,7 @@ Our Salmon index was generated with transcript sequences listed by Ensembl IDs, 
 tx2gene <- read.delim("../../data/tx2gene_grch38_ens94.txt")
 
 # Take a look at it 
-tx2gene %>% View()
+tx2gene %>% head()
 ```
 
 **`tx2gene`** is a three-column **data frame linking transcript ID (column 1) to gene ID (column 2)** to gene symbol (column 3). We will take the first two columns as input to `tximport`. The **column names are not relevant, but the column order is (i.e transcript ID must be first).**
@@ -204,7 +204,7 @@ We will be using the `txi` object as is, for input into DESeq2 but will save it 
 
 ```{r}
 # Look at the counts
-txi$counts %>% View()
+txi$counts %>% head()
 
 # Write the counts to an object
 data <- txi$counts %>% 
