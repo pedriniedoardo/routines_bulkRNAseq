@@ -5,12 +5,11 @@ html:
 editor: visual
 ---
 
-Learning Objectives:
--------------------
+## Learning Objectives:
 
-* Discuss the available genomic annotation databases and the different types if information stored
-* Compare and contrast the tools available for accessing genomic annotation databases 
-* Apply various R packages for retrieval of genomic annotations
+-   Discuss the available genomic annotation databases and the different types if information stored
+-   Compare and contrast the tools available for accessing genomic annotation databases
+-   Apply various R packages for retrieval of genomic annotations
 
 # Genomic annotations
 
@@ -20,35 +19,34 @@ The analysis of next-generation sequencing results requires associating genes, t
 
 We retrieve information on the processes, pathways, etc. (for which a gene is involved in) from the necessary database where the information is stored. The database you choose will be dependent on what type of information you are trying to obtain. Examples of databases that are often queried, include:
 
-**General databases** 
+**General databases**
 
 Offer comprehensive information on genome features, feature coordinates, homology, variant information, phenotypes, protein domain/family information, associated biological processes/pathways, associated microRNAs, etc.:
 
-- **Ensembl** (use Ensembl gene IDs)
-- **NCBI** (use Entrez gene IDs)
-- **UCSC** 
-- **EMBL-EBI**
+-   **Ensembl** (use Ensembl gene IDs)
+-   **NCBI** (use Entrez gene IDs)
+-   **UCSC**
+-   **EMBL-EBI**
 
 **Annotation-specific databases**
 
 Provide annotations related to a specific topic:
 
-- **Gene Ontology (GO):** database of gene ontology biological processes, cellular components and molecular functions - based on Ensembl or Entrez gene IDs or official gene symbols
-- **KEGG:** database of biological pathways - based on Entrez gene IDs
-- **MSigDB:** database of gene sets
-- **Reactome:** database of biological pathways
-- **Human Phenotype Ontology:** database of genes associated with human disease
-- **CORUM:** database of protein complexes for human, mouse, rat
-- **...**
+-   **Gene Ontology (GO):** database of gene ontology biological processes, cellular components and molecular functions - based on Ensembl or Entrez gene IDs or official gene symbols
+-   **KEGG:** database of biological pathways - based on Entrez gene IDs
+-   **MSigDB:** database of gene sets
+-   **Reactome:** database of biological pathways
+-   **Human Phenotype Ontology:** database of genes associated with human disease
+-   **CORUM:** database of protein complexes for human, mouse, rat
+-   **...**
 
 This is by no means an exhaustive list, there are many other databases available that are not listed here.
 
 ## Genome builds
 
-Before you begin your search through any of these databases, you should know which **build of the genome** was used to generate your gene list and make sure you use the **same build for the annotations** during functional analysis. When a new genome build is acquired, the names and/or coordinate location of genomic features (gene, transcript, exon, etc.) may change. Therefore, the annotations regarding genome features (gene, transcript, exon, etc.) is genome-build specific  and we need to make sure that our annotations are obtained from the appropriate resource. 
+Before you begin your search through any of these databases, you should know which **build of the genome** was used to generate your gene list and make sure you use the **same build for the annotations** during functional analysis. When a new genome build is acquired, the names and/or coordinate location of genomic features (gene, transcript, exon, etc.) may change. Therefore, the annotations regarding genome features (gene, transcript, exon, etc.) is genome-build specific and we need to make sure that our annotations are obtained from the appropriate resource.
 
-For example, if we used the GRCh38 build of the human genome to quantify gene expression used for differential expression analysis, then we should use the **same GRCh38 build** of the genome to convert between gene IDs and to identify annotations for each of the genes. 
-
+For example, if we used the GRCh38 build of the human genome to quantify gene expression used for differential expression analysis, then we should use the **same GRCh38 build** of the genome to convert between gene IDs and to identify annotations for each of the genes.
 
 ## Tools for accessing databases
 
@@ -56,20 +54,18 @@ Within R, there are many popular packages used for gene/transcript-level annotat
 
 ### Annotation tools: for accessing/querying annotations from a specific databases
 
-
 | Tool | Description | Pros | Cons |
-|:---:|:---|:---|:---:|
-|**[org.Xx.eg.db](https://bioconductor.org/packages/release/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf)** | Query gene feature information for the organism of interest | gene ID conversion, biotype and coordinate information | only latest genome build available |
-|**[EnsDb.Xx.vxx](http://bioconductor.org/packages/devel/bioc/vignettes/ensembldb/inst/doc/ensembldb.html)**| Transcript and gene-level information directly fetched from Ensembl API (similar to TxDb, but with filtering ability and versioned by Ensembl release) | easy functions to extract features, direct filtering | Not the most up-to-date annotations, more difficult to use than some packages |
-|**[TxDb.Xx.UCSC.hgxx.knownGene](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html)** | UCSC database for transcript and gene-level information or can create own *TxDb* from an SQLite database file using the *GenomicFeatures* package | feature information, easy functions to extract features | only available current and recent genome builds - can create your own, less up-to-date with annotations than Ensembl |
-|**[annotables](https://github.com/stephenturner/annotables)** | Gene-level feature information immediately available for the human and model organisms | super quick and easy gene ID conversion, biotype and coordinate information | static resource, not updated regularly | 
-|**[biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html)** | An R package version of the Ensembl [BioMart online tool](http://www.ensembl.org/biomart/martview/70dbbbe3f1c5389418b5ea1e02d89af3)  | all Ensembl database information available, all organisms on Ensembl, wealth of information |  |
-
+|:-----------------:|:----------------|:----------------|:-----------------:|
+| [**org.Xx.eg.db**](https://bioconductor.org/packages/release/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf) | Query gene feature information for the organism of interest | gene ID conversion, biotype and coordinate information | only latest genome build available |
+| [**EnsDb.Xx.vxx**](http://bioconductor.org/packages/devel/bioc/vignettes/ensembldb/inst/doc/ensembldb.html) | Transcript and gene-level information directly fetched from Ensembl API (similar to TxDb, but with filtering ability and versioned by Ensembl release) | easy functions to extract features, direct filtering | Not the most up-to-date annotations, more difficult to use than some packages |
+| [**TxDb.Xx.UCSC.hgxx.knownGene**](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html) | UCSC database for transcript and gene-level information or can create own *TxDb* from an SQLite database file using the *GenomicFeatures* package | feature information, easy functions to extract features | only available current and recent genome builds - can create your own, less up-to-date with annotations than Ensembl |
+| [**annotables**](https://github.com/stephenturner/annotables) | Gene-level feature information immediately available for the human and model organisms | super quick and easy gene ID conversion, biotype and coordinate information | static resource, not updated regularly |
+| [**biomaRt**](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) | An R package version of the Ensembl [BioMart online tool](http://www.ensembl.org/biomart/martview/70dbbbe3f1c5389418b5ea1e02d89af3) | all Ensembl database information available, all organisms on Ensembl, wealth of information |  |
 
 ### Interface tools: for accessing/querying annotations from multiple different annotation sources
 
-- **AnnotationDbi:** queries the *OrgDb*, *TxDb*, *Go.db*, *EnsDb*, and *BioMart* annotations.  
-- **AnnotationHub:** queries large collection of whole genome resources, including ENSEMBL, UCSC, ENCODE, Broad Institute, KEGG, NIH Pathway Interaction Database, etc.
+-   **AnnotationDbi:** queries the *OrgDb*, *TxDb*, *Go.db*, *EnsDb*, and *BioMart* annotations.\
+-   **AnnotationHub:** queries large collection of whole genome resources, including ENSEMBL, UCSC, ENCODE, Broad Institute, KEGG, NIH Pathway Interaction Database, etc.
 
 > **NOTE:** These are both packages that can be used to create the `tx2gene` files we had you download at the beginning of this workshop.
 
@@ -89,6 +85,7 @@ library(AnnotationDbi)
 # Check object metadata
 org.Hs.eg.db
 ```
+
 We can see the metadata for the database by just typing the name of the database, including the species, last updates for the different source information, and the source urls. Note the KEGG data from this database was last updated in 2011, so may not be the best site for KEGG pathway information.
 
 We can easily extract information from this database using *AnnotationDbi* with the methods: `columns`, `keys`, `keytypes`, and `select`. For example, we will use our `org.Hs.eg.db` database to acquire information, but know that the same methods work for the *TxDb*, *Go.db*, *EnsDb*, and *BioMart* annotations.
@@ -228,7 +225,7 @@ head(annotations_edb2)
 dim(annotations_edb2)
 ```
 
-> **NOTE:** In this case we used the same build but a slightly older release, and we found little discrepancy. If your analysis was conducted using an older genome build (i.e hg19), but used a newer build for annotation some genes may be found to be not annotated (NA). Some of the genes have changed names in between versions (due to updates and patches), so may not be present in the newer version of the database. 
+> **NOTE:** In this case we used the same build but a slightly older release, and we found little discrepancy. If your analysis was conducted using an older genome build (i.e hg19), but used a newer build for annotation some genes may be found to be not annotated (NA). Some of the genes have changed names in between versions (due to updates and patches), so may not be present in the newer version of the database.
 
 ## AnnotationHub
 
@@ -248,10 +245,11 @@ hubCache(ah)
 hubUrl(ah)
 ```
 
-> #### What is a cache? 
+> #### What is a cache?
+>
 > A cache is used in R to store data or a copy of the data so that future requests can be served faster without having to re-run a lengthy computation.
-> 
-> The `AnnotationHub()` command creates a client that manages a local cache of the database, helping with quick and reproducible access. When encountering question `AnnotationHub does not exist, create directory?`, you can anwser either `yes` (create a permanent location to store cache) or `no` (create a temporary location to store cache). `hubCache(ah)` gets the file system location of the local AnnotationHub cache. `hubUrl(ah)` gets the URL for the online hub. 
+>
+> The `AnnotationHub()` command creates a client that manages a local cache of the database, helping with quick and reproducible access. When encountering question `AnnotationHub does not exist, create directory?`, you can anwser either `yes` (create a permanent location to store cache) or `no` (create a temporary location to store cache). `hubCache(ah)` gets the file system location of the local AnnotationHub cache. `hubUrl(ah)` gets the URL for the online hub.
 
 To see the types of information stored inside our database, we can just type the name of the object:
 
@@ -260,9 +258,8 @@ To see the types of information stored inside our database, we can just type the
 ah
 ```
 
-Using the output, you can get an idea of the information that you can query within the AnnotationHub object:
-Notice the note on retrieving records with `object[[AH*]]` - this will be how we can **extract a single record** from the AnnotationHub object.
-  
+Using the output, you can get an idea of the information that you can query within the AnnotationHub object: Notice the note on retrieving records with `object[[AH*]]` - this will be how we can **extract a single record** from the AnnotationHub object.
+
 If you would like to see more information about any of the classes of data you can extract that information as well. For example, if you wanted to **determine all species information available**, you could explore that within the AnnotationHub object:
 
 ```{r}
@@ -359,12 +356,13 @@ head(test)
 ```
 
 > **NOTE:** Not all databases handle multiple mappings in the same way. For example, if we used the OrgDb instead of the EnsDb:
-> 
-> ```
+>
+> ```         
 > human_orgdb <- query(ah, c("org.Hs.eg.db.sqlite"))
 > human_orgdb <- human_orgdb[["AH116710"]]
 > annotations_orgdb <- AnnotationDbi::select(human_orgdb, res_tableOE_tb$gene, c("SYMBOL", "GENENAME", "ENTREZID"), "ENSEMBL")
 > ```
+>
 > We would find that multiple mapping entries would be automatically reduced to one-to-one. We would also find that more than half of the input genes do not return any annotations. This is because the OrgDb family of database are primarily based on mapping using Entrez Gene identifiers. Since our data is based on Ensembl mappings, using the OrgDb would result in a loss of information.
 
 ```{r}
@@ -383,7 +381,6 @@ annotations_orgdb %>%
   group_by(test) %>%
   summarise(n = n())
 ```
-
 
 Let's take a look and see how many of our Ensembl identifiers have an associated gene symbol, and how many of them are unique:
 
@@ -457,7 +454,7 @@ dim(genedb)
 head(genedb)
  
 # Merge the two dataframes together
-annotations <- inner_join(txdb, genedb)
+annotations <- inner_join(txdb2, genedb)
 
 dim(annotations)
 head(annotations)
@@ -465,19 +462,18 @@ head(annotations)
 
 In this lesson our focus has been using annotation packages to extract information mainly just for gene ID conversion for the different tools that we use downstream. Many of the annotation packages we have presented have much more information than what we need for functional analysis and we have only just scratched the surface here. It's good to know the capabilities of the tools we use, so we encourage you to spend some time exploring these packages to become more familiar with them.
 
-
-> **NOTE:** The *annotables* package is a super easy annotation package to use. It is not updated frequently, so it's not great for getting the most up-to-date information for the current builds and does not have information for other organisms than human and mouse, but is a quick way to get annotation information. 
+> **NOTE:** The *annotables* package is a super easy annotation package to use. It is not updated frequently, so it's not great for getting the most up-to-date information for the current builds and does not have information for other organisms than human and mouse, but is a quick way to get annotation information.
 >
->```r
-># Install package
->BiocManager::install("annotables")
+> ``` r
+> # Install package
+> BiocManager::install("annotables")
 >
-># Load library
->library(annotables)
+> # Load library
+> library(annotables)
 >
-># Access previous build of annotations
->grch38
->```
+> # Access previous build of annotations
+> grch38
+> ```
 
 Test the package
 
@@ -489,4 +485,3 @@ library(annotables)
 dim(grch38)
 head(grch38)
 ```
-

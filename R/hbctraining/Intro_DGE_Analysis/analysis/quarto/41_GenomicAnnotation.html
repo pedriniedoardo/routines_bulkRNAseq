@@ -154,31 +154,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: center;"><strong><a href="https://bioconductor.org/packages/release/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf">org.Xx.eg.db</a></strong></td>
+<td style="text-align: center;"><a href="https://bioconductor.org/packages/release/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf"><strong>org.Xx.eg.db</strong></a></td>
 <td style="text-align: left;">Query gene feature information for the organism of interest</td>
 <td style="text-align: left;">gene ID conversion, biotype and coordinate information</td>
 <td style="text-align: center;">only latest genome build available</td>
 </tr>
 <tr class="even">
-<td style="text-align: center;"><strong><a href="http://bioconductor.org/packages/devel/bioc/vignettes/ensembldb/inst/doc/ensembldb.html">EnsDb.Xx.vxx</a></strong></td>
+<td style="text-align: center;"><a href="http://bioconductor.org/packages/devel/bioc/vignettes/ensembldb/inst/doc/ensembldb.html"><strong>EnsDb.Xx.vxx</strong></a></td>
 <td style="text-align: left;">Transcript and gene-level information directly fetched from Ensembl API (similar to TxDb, but with filtering ability and versioned by Ensembl release)</td>
 <td style="text-align: left;">easy functions to extract features, direct filtering</td>
 <td style="text-align: center;">Not the most up-to-date annotations, more difficult to use than some packages</td>
 </tr>
 <tr class="odd">
-<td style="text-align: center;"><strong><a href="https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html">TxDb.Xx.UCSC.hgxx.knownGene</a></strong></td>
+<td style="text-align: center;"><a href="https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html"><strong>TxDb.Xx.UCSC.hgxx.knownGene</strong></a></td>
 <td style="text-align: left;">UCSC database for transcript and gene-level information or can create own <em>TxDb</em> from an SQLite database file using the <em>GenomicFeatures</em> package</td>
 <td style="text-align: left;">feature information, easy functions to extract features</td>
 <td style="text-align: center;">only available current and recent genome builds - can create your own, less up-to-date with annotations than Ensembl</td>
 </tr>
 <tr class="even">
-<td style="text-align: center;"><strong><a href="https://github.com/stephenturner/annotables">annotables</a></strong></td>
+<td style="text-align: center;"><a href="https://github.com/stephenturner/annotables"><strong>annotables</strong></a></td>
 <td style="text-align: left;">Gene-level feature information immediately available for the human and model organisms</td>
 <td style="text-align: left;">super quick and easy gene ID conversion, biotype and coordinate information</td>
 <td style="text-align: center;">static resource, not updated regularly</td>
 </tr>
 <tr class="odd">
-<td style="text-align: center;"><strong><a href="https://bioconductor.org/packages/release/bioc/html/biomaRt.html">biomaRt</a></strong></td>
+<td style="text-align: center;"><a href="https://bioconductor.org/packages/release/bioc/html/biomaRt.html"><strong>biomaRt</strong></a></td>
 <td style="text-align: left;">An R package version of the Ensembl <a href="http://www.ensembl.org/biomart/martview/70dbbbe3f1c5389418b5ea1e02d89af3">BioMart online tool</a></td>
 <td style="text-align: left;">all Ensembl database information available, all organisms on Ensembl, wealth of information</td>
 <td style="text-align: center;"></td>
@@ -1301,13 +1301,13 @@ annotations_orgdb &lt;- AnnotationDbi::select(human_orgdb, res_tableOE_tb$gene, 
 6 ENSG00000237613     FAM138A</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Merge the two dataframes together</span></span>
-<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>annotations <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(txdb, genedb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>annotations <span class="ot">&lt;-</span> <span class="fu">inner_join</span>(txdb2, genedb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Joining with `by = join_by(gene_id)`</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(annotations)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 250194      3</code></pre>
+<pre><code>[1] 249158      3</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(annotations)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
